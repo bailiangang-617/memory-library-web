@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>自测中</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="gate" class="gate hidden"></div>
+  <div id="app" class="app hidden">
+    <header class="top">
+      <div>
+        <h1 id="page-title">自测</h1>
+        <p id="page-sub" class="sub"></p>
+      </div>
+    </header>
+    <main id="main"></main>
+    <nav class="tabbar">
+      <button data-tab="story" class="tab on" type="button">故事</button>
+      <button data-tab="add" class="tab" type="button">记下</button>
+      <button data-tab="mine" class="tab" type="button">我们</button>
+    </nav>
+  </div>
+  <script>window.FORCE_SELFTEST = true</script>
+  <script src="./app.js"></script>
+</body>
+</html>
