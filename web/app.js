@@ -1,4 +1,4 @@
-const ACCESS_CODE = "huiyi"
+const ACCESS_CODE = "heziqing"
 const DB_NAME = "our-moments-v1"
 const MAX_EDGE = 1280
 
@@ -70,6 +70,12 @@ function getAll() {
   })
 }
 
+async function persistEntry(entry) {
+  if (Cloud.on()) return Cloud.save(entry)
+  await putEntry(entry)
+  return entry
+}
+
 function putEntry(entry) {
   return openDb().then((db) => {
     if (memoryOnly || !db) {
@@ -103,14 +109,25 @@ function deleteEntry(id) {
 }
 
 async function loadAll() {
+  if (window.Cloud && Cloud.on()) {
+    await Cloud.ready()
+    state.entries = (await Cloud.list()).sort((a, b) => (b.happenedAt || 0) - (a.happenedAt || 0))
+    return
+  }
   const entries = await getAll()
   state.entries = entries.sort((a, b) => (b.happenedAt || 0) - (a.happenedAt || 0))
 }
 
 function fileUrl(file) {
-  if (!file || !file.blob) return ""
+  if (!file) return ""
+  if (file.url) return file.url
+  if (!file.blob) return ""
   if (!urlCache.has(file.id)) urlCache.set(file.id, URL.createObjectURL(file.blob))
   return urlCache.get(file.id)
+}
+
+function shareHint() {
+  return Cloud.on() ? "已开通云端，其他人打开同一网站也能看到你记下的内容。" : "现在还是仅本机。开通云端后，上传的内容才能给别人看。"
 }
 
 function escapeHtml(text) {
@@ -181,9 +198,9 @@ function filteredEntries() {
 
 function render() {
   const titles = {
-    story: ["故事", `已记下 ${state.entries.length} 个点滴`],
-    add: ["记下", "聊天摘录、照片、视频或一封信"],
-    mine: ["我们的点滴", "只存在这台设备的浏览器里"]
+    story: ["故事", Cloud.on() ? `云端共享 · ${state.entries.length} 个点滴` : `仅本机 · ${state.entries.length} 个点滴`],
+    add: ["记下", Cloud.on() ? "保存后会上传，打开这个网站的人都能看" : "先开通云端，别人才能看到你记下的内容"],
+    mine: ["我们的点滴", shareHint()]
   }
   if (!state.view) {
     $("page-title").textContent = titles[state.tab][0]
@@ -198,7 +215,7 @@ function render() {
 function renderStory() {
   const list = filteredEntries()
   if (!state.entries.length) {
-    $("main").innerHTML = `<div class="empty"><h2>还没有点滴</h2><p>先记下一段聊天、一组照片，或一封信。也可以先载入示例，看看效果。</p><div class="row-btns" style="justify-content:center"><button class="btn primary" data-act="demo" type="button">载入示例故事</button><button class="btn plain" data-tab="add" type="button">自己记下</button></div></div>`
+    $("main").innerHTML = `<div class="empty"><h2>还没有点滴</h2><p>${Cloud.on() ? "云端还是空的。记下之后，其他人刷新就能看到。" : "现在只能存在这台浏览器里。要让别人看见，请先到「我们」开通云端。"}</p><div class="row-btns" style="justify-content:center"><button class="btn primary" data-act="demo" type="button">载入示例故事</button><button class="btn plain" data-tab="add" type="button">自己记下</button></div></div>`
     return
   }
   $("main").innerHTML = `
@@ -244,7 +261,7 @@ function renderAdd() {
       <p id="f-picked" class="muted"></p>
       <button class="btn primary" id="f-save" type="button">收进故事</button>
     </section>
-    <p class="sub">读不到微信里正在聊的内容。聊天请自己导出或粘贴摘录。文件不会上传到服务器。</p>
+    <p class="sub">${Cloud.on() ? "保存后会上传到云端，知道链接和口令的人刷新就能看到。" : "还没开通云端时，内容只留在这台浏览器。开通方法在「我们」。"}</p>
   `
 }
 
@@ -272,13 +289,16 @@ function renderMine() {
       <p>一句纪念日备注</p>
     </section>
     <section class="card list">
+      <h3>共享状态</h3>
+      <p>${Cloud.on() ? "已接上云函数。你记下的内容会存到云端，其他人打开同一网站刷新就能看。" : "还差云函数地址。免费托管不能上传网页，改用「新建云函数」即可。"}</p>
+    </section>
+    <section class="card list">
       <h3>做不到</h3>
       <p class="muted">自动读取微信正在聊的记录</p>
       <p class="muted">扫描整机相册</p>
-      <p class="muted">把内容存到网站服务器上</p>
     </section>
     <button class="btn ghost block" data-act="demo" type="button">载入示例故事</button>
-    <button class="btn danger block" data-act="clear" type="button" style="margin-top:10px">清空本机故事</button>
+    <button class="btn danger block" data-act="clear" type="button" style="margin-top:10px">${Cloud.on() ? "清空云端故事（所有人都会看不到）" : "清空本机故事"}</button>
   `
 }
 
@@ -371,15 +391,21 @@ async function onMainClick(event) {
     return
   }
   if (act.dataset.act === "delete") {
-    if (!confirm("删除后只从这台浏览器里去掉，原文件还在你手机或电脑上。")) return
-    ;(act.dataset.id ? [act.dataset.id] : []).forEach((id) => {
-      const entry = state.entries.find((item) => item.id === id)
-      ;(entry?.files || []).forEach((file) => urlCache.delete(file.id))
-    })
-    await deleteEntry(act.dataset.id)
-    await loadAll()
-    state.view = null
-    render()
+    if (!confirm(Cloud.on() ? "删除后所有打开这个网站的人都看不到这条。" : "删除后只从这台浏览器里去掉。")) return
+    try {
+      ;(act.dataset.id ? [act.dataset.id] : []).forEach((id) => {
+        const entry = state.entries.find((item) => item.id === id)
+        ;(entry?.files || []).forEach((file) => urlCache.delete(file.id))
+      })
+      const target = state.entries.find((item) => item.id === act.dataset.id)
+      if (Cloud.on()) await Cloud.remove(target)
+      else await deleteEntry(act.dataset.id)
+      await loadAll()
+      state.view = null
+      render()
+    } catch (error) {
+      alert(error.message || "删除失败")
+    }
     return
   }
   if (act.dataset.act === "demo") {
@@ -391,14 +417,19 @@ async function onMainClick(event) {
     return
   }
   if (act.dataset.act === "clear") {
-    if (!confirm("将清空这台浏览器里的全部点滴。")) return
-    for (const entry of state.entries) {
-      await deleteEntry(entry.id)
+    if (!confirm(Cloud.on() ? "将清空云端全部点滴，所有人都看不到。" : "将清空这台浏览器里的全部点滴。")) return
+    try {
+      for (const entry of state.entries) {
+        if (Cloud.on()) await Cloud.remove(entry)
+        else await deleteEntry(entry.id)
+      }
+      urlCache.forEach((url) => URL.revokeObjectURL(url))
+      urlCache.clear()
+      await loadAll()
+      render()
+    } catch (error) {
+      alert(error.message || "清空失败")
     }
-    urlCache.forEach((url) => URL.revokeObjectURL(url))
-    urlCache.clear()
-    await loadAll()
-    render()
   }
 }
 
@@ -438,13 +469,26 @@ async function saveCompose() {
     createdAt: Date.now(),
     files
   }
-  await putEntry(entry)
-  await loadAll()
-  state.tab = "story"
-  state.filter = "all"
-  state.view = entry.id
-  document.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("on", btn.dataset.tab === "story"))
-  render()
+  const btn = $("f-save")
+  if (btn) {
+    btn.disabled = true
+    btn.textContent = Cloud.on() ? "正在上传…" : "正在保存…"
+  }
+  try {
+    const saved = await persistEntry(entry)
+    await loadAll()
+    state.tab = "story"
+    state.filter = "all"
+    state.view = saved.id
+    document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("on", tab.dataset.tab === "story"))
+    render()
+  } catch (error) {
+    alert(error.message || "保存失败")
+    if (btn) {
+      btn.disabled = false
+      btn.textContent = "收进故事"
+    }
+  }
 }
 
 async function runSelfTest() {
@@ -480,6 +524,15 @@ async function sampleFile(name, mime) {
   }
 }
 
+function sampleRef(name, mime) {
+  return {
+    id: uid("f"),
+    name,
+    mime,
+    url: `./samples/${name}`
+  }
+}
+
 function daysAgo(days, hour) {
   const date = new Date()
   date.setDate(date.getDate() - days)
@@ -492,16 +545,14 @@ async function loadDemo() {
     alert("示例已经在故事里了，可先清空再载入。")
     return
   }
-  const [mountain, river, seaside, coffee, food, night, envelope, pdf] = await Promise.all([
-    sampleFile("mountain.jpg", "image/jpeg"),
-    sampleFile("river.jpg", "image/jpeg"),
-    sampleFile("seaside.png", "image/png"),
-    sampleFile("coffee.png", "image/png"),
-    sampleFile("food.jpg", "image/jpeg"),
-    sampleFile("night.jpg", "image/jpeg"),
-    sampleFile("envelope.png", "image/png"),
-    sampleFile("letter.pdf", "application/pdf")
-  ])
+  const mountain = sampleRef("mountain.jpg", "image/jpeg")
+  const river = sampleRef("river.jpg", "image/jpeg")
+  const seaside = sampleRef("seaside.png", "image/png")
+  const coffee = sampleRef("coffee.png", "image/png")
+  const food = sampleRef("food.jpg", "image/jpeg")
+  const night = sampleRef("night.jpg", "image/jpeg")
+  const envelope = sampleRef("envelope.png", "image/png")
+  const pdf = sampleRef("letter.pdf", "application/pdf")
   const samples = [
     {
       type: "note",
@@ -551,7 +602,7 @@ async function loadDemo() {
     }
   ]
   for (const item of samples) {
-    await putEntry({
+    await persistEntry({
       id: uid("e"),
       demo: true,
       files: item.files || [],
@@ -580,6 +631,9 @@ async function boot() {
     if (selftest) {
       document.title = `SELFTEST_FAIL load ${error.message}`
       return
+    }
+    if (Cloud.on()) {
+      alert(`云端读取失败：${error.message || "请检查云函数是否可用"}`)
     }
   }
   if (selftest) {

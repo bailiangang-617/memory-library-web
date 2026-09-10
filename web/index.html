@@ -12,7 +12,7 @@
     <div class="gate-card">
       <p class="kicker">小范围预览</p>
       <h1>我们的点滴</h1>
-      <p class="gate-desc">把聊天摘录、照片、视频和电子信收成一条故事线。内容只存在你自己的浏览器里，不会上传到服务器。</p>
+      <p class="gate-desc">把聊天摘录、照片、视频和电子信收成一条故事线。开通云端后，你记下的内容其他人打开同一链接也能看。</p>
       <input id="gate-input" class="input" type="password" placeholder="访问口令" autocomplete="off" />
       <button id="gate-btn" class="btn primary" type="button">进入</button>
       <p id="gate-error" class="error hidden">口令不对</p>
@@ -33,6 +33,8 @@
       <button data-tab="mine" class="tab" type="button">我们</button>
     </nav>
   </div>
+  <script src="./cloud-config.js"></script>
+  <script src="./cloud.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>

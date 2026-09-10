@@ -1,0 +1,9 @@
+{
+  "name": "moments",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.16.0",
+    "tencentcloud-sdk-nodejs-tcb": "^4.1.0"
+  }
+}

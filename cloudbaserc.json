@@ -1,0 +1,13 @@
+{
+  "envId": "ziqinghuiyilu-d0gzmlqwm75797fd9",
+  "functionRoot": "cloud-fn",
+  "functions": [
+    {
+      "name": "moments",
+      "timeout": 60,
+      "runtime": "Nodejs18.15",
+      "handler": "index.main",
+      "installDependency": true
+    }
+  ]
+}
