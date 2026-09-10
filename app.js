@@ -1,6 +1,5 @@
 const ACCESS_CODE = "heziqing"
 const DB_NAME = "our-moments-v1"
-const MAX_EDGE = 960
 
 const KINDS = [
   { type: "chat", label: "聊天" },
@@ -121,6 +120,12 @@ async function loadAll() {
 function fileUrl(file) {
   if (!file) return ""
   if (file.url) return file.url
+  if (file.fileID) {
+    const path = String(file.fileID).replace(/^cloud:\/\/[^/]+\//, "")
+    if (path && path !== file.fileID) {
+      return `https://7a69-ziqinghuiyilu-d0gzmlqwm75797fd9-1485207164.tcb.qcloud.la/${path}`
+    }
+  }
   if (!file.blob) return ""
   if (!urlCache.has(file.id)) urlCache.set(file.id, URL.createObjectURL(file.blob))
   return urlCache.get(file.id)
@@ -150,45 +155,13 @@ function toDatetimeLocal(ts) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
 }
 
-function compressImage(file) {
-  return new Promise((resolve) => {
-    if (!file.type.startsWith("image/")) {
-      resolve({ blob: file, width: 0, height: 0 })
-      return
-    }
-    const img = new Image()
-    const src = URL.createObjectURL(file)
-    img.onload = () => {
-      const scale = Math.min(1, MAX_EDGE / Math.max(img.width, img.height))
-      const canvas = document.createElement("canvas")
-      canvas.width = Math.round(img.width * scale)
-      canvas.height = Math.round(img.height * scale)
-      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height)
-      canvas.toBlob((blob) => {
-        URL.revokeObjectURL(src)
-        resolve({ blob: blob || file, width: canvas.width, height: canvas.height })
-      }, "image/jpeg", 0.72)
-    }
-    img.onerror = () => {
-      URL.revokeObjectURL(src)
-      resolve({ blob: file, width: 0, height: 0 })
-    }
-    img.src = src
-  })
-}
-
 async function filesFromInput(list) {
-  const out = []
-  for (const file of Array.from(list || [])) {
-    const packed = await compressImage(file)
-    out.push({
-      id: uid("f"),
-      name: file.name,
-      mime: file.type || "application/octet-stream",
-      blob: packed.blob
-    })
-  }
-  return out
+  return Array.from(list || []).map((file) => ({
+    id: uid("f"),
+    name: file.name,
+    mime: file.type || "application/octet-stream",
+    blob: file
+  }))
 }
 
 function filteredEntries() {

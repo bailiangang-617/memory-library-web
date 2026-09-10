@@ -32,6 +32,21 @@ const Cloud = {
     return data
   },
 
+  async uploadDirect(file, upload) {
+    const headers = {
+      "Content-Type": file.mime || "application/octet-stream"
+    }
+    if (upload.authorization) headers.Authorization = upload.authorization
+    if (upload.token) headers["x-cos-security-token"] = upload.token
+    if (upload.cosFileId) headers["x-cos-meta-fileid"] = upload.cosFileId
+    const res = await fetch(upload.uploadUrl, {
+      method: "PUT",
+      headers,
+      body: file.blob
+    })
+    if (!res.ok) throw new Error(`直传失败 ${res.status}`)
+  },
+
   async blobToChunks(blob) {
     const buffer = await blob.arrayBuffer()
     const bytes = new Uint8Array(buffer)
@@ -46,9 +61,11 @@ const Cloud = {
     return chunks
   },
 
-  async uploadBlob(file) {
+  async uploadChunked(file) {
+    if (file.blob.size > 80 * 1024) {
+      throw new Error("文件太大，直传失败后不能再走小片上传。请换一张压缩过的照片，或稍后再试")
+    }
     const chunks = await this.blobToChunks(file.blob)
-    if (!chunks.length) throw new Error("文件是空的")
     const fileIDs = []
     for (let index = 0; index < chunks.length; index += 1) {
       const part = await this.call("uploadChunk", {
@@ -70,6 +87,27 @@ const Cloud = {
       mime: file.mime,
       fileID: done.fileID,
       url: done.url || ""
+    }
+  },
+
+  async uploadBlob(file) {
+    try {
+      const prepared = await this.call("prepareUpload", {
+        file: { id: file.id, name: file.name, mime: file.mime }
+      })
+      const upload = prepared.upload || {}
+      if (!upload.uploadUrl) throw new Error("没有拿到直传地址")
+      await this.uploadDirect(file, upload)
+      return {
+        id: file.id,
+        name: file.name,
+        mime: file.mime,
+        fileID: upload.fileID,
+        url: upload.url || ""
+      }
+    } catch (error) {
+      if (file.blob && file.blob.size <= 80 * 1024) return this.uploadChunked(file)
+      throw error
     }
   },
 
