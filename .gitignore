@@ -1,0 +1,8 @@
+app/node_modules/
+app/.expo/
+app/dist/
+web/.chrome-profile/
+web/chrome-*.txt
+web/*.png
+.DS_Store
+Thumbs.db

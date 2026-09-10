@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>自测中</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="gate" class="gate hidden"></div>
+  <div id="app" class="app hidden">
+    <header class="top">
+      <div>
+        <h1 id="page-title">自测</h1>
+        <p id="page-sub" class="sub"></p>
+      </div>
+      <button id="manage-btn" class="text-btn hidden" type="button">管理</button>
+    </header>
+    <main id="main"></main>
+    <nav class="tabbar">
+      <button data-tab="library" class="tab on" type="button">库</button>
+      <button data-tab="memories" class="tab" type="button">回忆集</button>
+      <button data-tab="import" class="tab" type="button">导入</button>
+      <button data-tab="mine" class="tab" type="button">我的</button>
+    </nav>
+  </div>
+  <script>window.FORCE_SELFTEST = true</script>
+  <script src="./app.js"></script>
+</body>
+</html>
