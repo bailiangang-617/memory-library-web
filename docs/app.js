@@ -198,7 +198,7 @@ function render() {
 function renderStory() {
   const list = filteredEntries()
   if (!state.entries.length) {
-    $("main").innerHTML = `<div class="empty"><h2>还没有点滴</h2><p>先记下一段聊天、一组照片，或一封信。</p><button class="btn primary" data-tab="add" type="button">去记下</button></div>`
+    $("main").innerHTML = `<div class="empty"><h2>还没有点滴</h2><p>先记下一段聊天、一组照片，或一封信。也可以先载入示例，看看效果。</p><div class="row-btns" style="justify-content:center"><button class="btn primary" data-act="demo" type="button">载入示例故事</button><button class="btn plain" data-tab="add" type="button">自己记下</button></div></div>`
     return
   }
   $("main").innerHTML = `
@@ -277,7 +277,8 @@ function renderMine() {
       <p class="muted">扫描整机相册</p>
       <p class="muted">把内容存到网站服务器上</p>
     </section>
-    <button class="btn danger block" data-act="clear" type="button">清空本机故事</button>
+    <button class="btn ghost block" data-act="demo" type="button">载入示例故事</button>
+    <button class="btn danger block" data-act="clear" type="button" style="margin-top:10px">清空本机故事</button>
   `
 }
 
@@ -381,6 +382,14 @@ async function onMainClick(event) {
     render()
     return
   }
+  if (act.dataset.act === "demo") {
+    try {
+      await loadDemo()
+    } catch (error) {
+      alert(error.message || "示例载入失败")
+    }
+    return
+  }
   if (act.dataset.act === "clear") {
     if (!confirm("将清空这台浏览器里的全部点滴。")) return
     for (const entry of state.entries) {
@@ -457,6 +466,105 @@ async function runSelfTest() {
   document.title = text
   document.body.insertAdjacentHTML("afterbegin", `<pre id="selftest-result">${text}</pre>`)
   switchTab("story")
+}
+
+async function sampleFile(name, mime) {
+  const res = await fetch(`./samples/${name}`)
+  if (!res.ok) throw new Error(`缺少示例文件 ${name}`)
+  const blob = await res.blob()
+  return {
+    id: uid("f"),
+    name,
+    mime: mime || blob.type || "application/octet-stream",
+    blob
+  }
+}
+
+function daysAgo(days, hour) {
+  const date = new Date()
+  date.setDate(date.getDate() - days)
+  date.setHours(hour ?? 20, 18, 0, 0)
+  return date.getTime()
+}
+
+async function loadDemo() {
+  if (state.entries.some((item) => item.demo)) {
+    alert("示例已经在故事里了，可先清空再载入。")
+    return
+  }
+  const [mountain, river, seaside, coffee, food, night, envelope, pdf] = await Promise.all([
+    sampleFile("mountain.jpg", "image/jpeg"),
+    sampleFile("river.jpg", "image/jpeg"),
+    sampleFile("seaside.png", "image/png"),
+    sampleFile("coffee.png", "image/png"),
+    sampleFile("food.jpg", "image/jpeg"),
+    sampleFile("night.jpg", "image/jpeg"),
+    sampleFile("envelope.png", "image/png"),
+    sampleFile("letter.pdf", "application/pdf")
+  ])
+  const samples = [
+    {
+      type: "note",
+      title: "相识第 1 天",
+      body: "图书馆关门的时候下了小雨。伞只有一把，后来谁也没再提这件事。",
+      happenedAt: daysAgo(120, 21)
+    },
+    {
+      type: "chat",
+      title: "深夜闲聊",
+      body: "她：还没睡？\n我：在改一份明天要交的东西。\n她：那我陪你一会儿。\n我：不用，你早点睡。\n她：我看着你写完再睡。\n我：……好。\n她：写完了喊我。\n我：嗯。",
+      happenedAt: daysAgo(96, 23)
+    },
+    {
+      type: "photo",
+      title: "第一次出门",
+      body: "走错了两次路，最后在江边把风筝线绕到一起。",
+      happenedAt: daysAgo(80, 15),
+      files: [mountain, river]
+    },
+    {
+      type: "chat",
+      title: "关于晚饭",
+      body: "我：今晚想吃什么？\n她：随便。\n我：那火锅？\n她：不要。\n我：米线？\n她：不要。\n我：那你说。\n她：你再猜。\n我：那家咖啡店下面的面。\n她：对。",
+      happenedAt: daysAgo(52, 18)
+    },
+    {
+      type: "photo",
+      title: "海边的下午",
+      body: "风很大，话说到一半就被吹走了。椅子是空的，人就站在旁边。",
+      happenedAt: daysAgo(36, 16),
+      files: [seaside, coffee]
+    },
+    {
+      type: "photo",
+      title: "一顿普通的晚饭",
+      body: "没有纪念日。就是那天刚好都有空。",
+      happenedAt: daysAgo(18, 19),
+      files: [food, night]
+    },
+    {
+      type: "letter",
+      title: "一封没有寄出的信",
+      body: "给你：\n\n后来我想，那天晚上的路灯其实并不亮，只是你走在旁边，整条街都像被点着了。\n没有要你回信。把这一页留下，就够了。\n\n—— 写于相识第 100 天",
+      happenedAt: daysAgo(7, 22),
+      files: [envelope, pdf]
+    }
+  ]
+  for (const item of samples) {
+    await putEntry({
+      id: uid("e"),
+      demo: true,
+      files: item.files || [],
+      createdAt: Date.now(),
+      ...item
+    })
+  }
+  await loadAll()
+  state.tab = "story"
+  state.filter = "all"
+  state.view = null
+  document.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("on", btn.dataset.tab === "story"))
+  render()
 }
 
 function shouldSelfTest() {
