@@ -1,0 +1,54 @@
+{
+  "pages": [
+    "pages/library/library",
+    "pages/memories/memories",
+    "pages/import/import",
+    "pages/mine/mine",
+    "pages/photo-detail/photo-detail",
+    "pages/memory-detail/memory-detail",
+    "pages/memory-edit/memory-edit",
+    "pages/tag-edit/tag-edit"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#F4EFE6",
+    "navigationBarTitleText": "精选回忆库",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F4EFE6",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#8A7E70",
+    "selectedColor": "#B85C38",
+    "backgroundColor": "#FFFBF5",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/library/library",
+        "text": "库",
+        "iconPath": "assets/tab-library.png",
+        "selectedIconPath": "assets/tab-library-active.png"
+      },
+      {
+        "pagePath": "pages/memories/memories",
+        "text": "回忆集",
+        "iconPath": "assets/tab-memory.png",
+        "selectedIconPath": "assets/tab-memory-active.png"
+      },
+      {
+        "pagePath": "pages/import/import",
+        "text": "导入",
+        "iconPath": "assets/tab-import.png",
+        "selectedIconPath": "assets/tab-import-active.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "assets/tab-mine.png",
+        "selectedIconPath": "assets/tab-mine-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

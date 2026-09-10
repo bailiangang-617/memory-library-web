@@ -1,0 +1,68 @@
+.hero {
+  margin-top: 32rpx;
+  padding: 40rpx 32rpx;
+}
+
+.secondary {
+  margin-top: 20rpx;
+}
+
+.hint {
+  margin-top: 20rpx;
+  color: var(--accent);
+  font-size: 24rpx;
+}
+
+.hero-kicker {
+  color: var(--accent);
+  font-size: 22rpx;
+  letter-spacing: 2rpx;
+}
+
+.hero-title {
+  margin-top: 12rpx;
+  font-size: 40rpx;
+  font-weight: 600;
+}
+
+.hero-desc {
+  margin: 16rpx 0 36rpx;
+  color: var(--muted);
+  font-size: 26rpx;
+}
+
+.result {
+  margin-top: 40rpx;
+}
+
+.result-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16rpx;
+}
+
+.result-title {
+  font-weight: 600;
+}
+
+.result-link,
+.link {
+  color: var(--accent);
+  font-size: 24rpx;
+}
+
+.actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 28rpx;
+}
+
+.actions .btn {
+  flex: 1;
+}
+
+.link {
+  margin-top: 24rpx;
+  text-align: center;
+}

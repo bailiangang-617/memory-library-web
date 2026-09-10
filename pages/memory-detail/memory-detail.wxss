@@ -1,0 +1,19 @@
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.manage {
+  padding-top: 10rpx;
+  color: var(--accent);
+}
+
+.desc {
+  margin: 20rpx 0 12rpx;
+  color: var(--muted);
+}
+
+.danger {
+  margin-top: 40rpx;
+}

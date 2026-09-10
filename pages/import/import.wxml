@@ -1,0 +1,32 @@
+<view class="page">
+  <view class="page-title">导入</view>
+  <view class="page-sub">上万张照片由 App 扫描建索引。小程序只接收回忆集，或为某一集精选配图。</view>
+
+  <view class="hero card">
+    <view class="hero-kicker">推荐路径</view>
+    <view class="hero-title">从 App 导入回忆集</view>
+    <view class="hero-desc">在 App 里扫完相册、做成回忆集后，导出 memory-export-v1.json，再从聊天记录选择该文件。不会把整机照片传进小程序。</view>
+    <view class="btn btn-primary" bindtap="importFromApp">选择 App 导出文件</view>
+    <view wx:if="{{importHint}}" class="hint" bindtap="goMemories">{{importHint}}，去回忆集看看</view>
+  </view>
+
+  <view class="hero card secondary">
+    <view class="hero-kicker">补充配图</view>
+    <view class="hero-title">精选导入最多 {{maxCount}} 张</view>
+    <view class="hero-desc">只给某一集补几张图时才用。默认压预览图，不必上传原图，更不要试图导完全部相册。</view>
+    <view class="btn btn-ghost" bindtap="choosePhotos">从相册精选</view>
+  </view>
+
+  <view wx:if="{{lastCount}}" class="result">
+    <view class="result-head">
+      <view class="result-title">刚刚导入 {{lastCount}} 张</view>
+      <view class="result-link" bindtap="continueImport">继续精选</view>
+    </view>
+    <photo-grid photos="{{lastPhotos}}" />
+    <view class="actions">
+      <view class="btn btn-ghost" bindtap="goTag">去打标签</view>
+      <view class="btn btn-primary" bindtap="goMemory">做成回忆集</view>
+    </view>
+    <view class="link" bindtap="goLibrary">先去照片库看看</view>
+  </view>
+</view>

@@ -1,0 +1,9 @@
+{
+  "desc": "精选回忆库 sitemap",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}

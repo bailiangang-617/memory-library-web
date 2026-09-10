@@ -1,0 +1,24 @@
+<view class="page">
+  <view class="page-title">打标签</view>
+  <view class="page-sub">将应用到已选的 {{photoCount}} 张照片。标签可复用，方便以后筛选。</view>
+
+  <view wx:for="{{groups}}" wx:key="type" class="group">
+    <view class="group-head">
+      <view>{{item.label}}</view>
+      <view class="link" data-type="{{item.type}}" bindtap="addTag">添加</view>
+    </view>
+    <view wx:if="{{item.tags.length}}" class="tags">
+      <view
+        wx:for="{{item.tags}}"
+        wx:for-item="tag"
+        wx:key="id"
+        class="chip {{tag.selected ? 'active' : ''}}"
+        data-id="{{tag.id}}"
+        bindtap="toggleTag"
+      >{{tag.name}}</view>
+    </view>
+    <view wx:else class="hint">还没有{{item.label}}标签</view>
+  </view>
+
+  <view class="btn btn-primary save" bindtap="save">保存标签</view>
+</view>

@@ -1,0 +1,31 @@
+<view wx:if="{{photo}}" class="page detail">
+  <image wx:if="{{photo.filePath}}" class="hero" src="{{photo.filePath}}" mode="aspectFill" bindtap="preview" />
+  <view wx:else class="hero blank">这张图还在系统相册里。小程序只保存了回忆信息，可在详情里精选配图。</view>
+
+  <view class="card info">
+    <view class="row">
+      <view class="k">拍摄时间</view>
+      <view class="v">{{timeLabel}}</view>
+    </view>
+    <view class="row" bindtap="editLocation">
+      <view class="k">地点</view>
+      <view class="v accent">{{photo.locationName || '点击补充'}}</view>
+    </view>
+  </view>
+
+  <view class="card info">
+    <view class="row" bindtap="editTags">
+      <view class="k">标签</view>
+      <view class="v accent">编辑</view>
+    </view>
+    <view class="tags" wx:if="{{photo.tags.length}}">
+      <view wx:for="{{photo.tags}}" wx:key="id" class="tag">{{typeLabel[item.type]}} · {{item.name}}</view>
+    </view>
+    <view wx:else class="hint">还没有标签。打上人物、地点或内容后，就能在库里筛选。</view>
+  </view>
+
+  <view class="actions">
+    <view class="btn btn-primary" bindtap="addToMemory">加入回忆集</view>
+    <view class="btn btn-danger" bindtap="remove">从库中删除</view>
+  </view>
+</view>

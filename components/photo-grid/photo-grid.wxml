@@ -1,0 +1,13 @@
+<view class="grid">
+  <view
+    wx:for="{{items}}"
+    wx:key="id"
+    class="cell"
+    data-id="{{item.id}}"
+    bindtap="onTap"
+  >
+    <image wx:if="{{item.filePath}}" class="img" src="{{item.filePath}}" mode="aspectFill" lazy-load />
+    <view wx:else class="img placeholder">待配图</view>
+    <view wx:if="{{selectMode}}" class="check {{item.checked ? 'on' : ''}}"></view>
+  </view>
+</view>

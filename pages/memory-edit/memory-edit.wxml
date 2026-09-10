@@ -1,0 +1,38 @@
+<view class="page">
+  <view class="card form">
+    <input class="input" placeholder="给这集起个名字" value="{{title}}" bindinput="onTitle" />
+    <textarea class="textarea" placeholder="可以写一句当时的话" value="{{description}}" bindinput="onDesc" auto-height />
+  </view>
+
+  <view class="section">
+    <view class="section-head">
+      <view>照片 · {{photos.length}}</view>
+      <view class="link" bindtap="openPicker">从库中选择</view>
+    </view>
+    <view wx:if="{{!photos.length}}" class="hint">还没有照片。从库里挑一组，或导入后再来。</view>
+    <view class="picked">
+      <view wx:for="{{photos}}" wx:key="id" class="picked-item">
+        <image class="picked-img" src="{{item.filePath}}" mode="aspectFill" data-id="{{item.id}}" bindtap="setCover" />
+        <view class="cover-mark {{coverPhotoId === item.id ? 'on' : ''}}">{{coverPhotoId === item.id ? '封面' : '设为封面'}}</view>
+        <view class="remove" data-id="{{item.id}}" catchtap="removePhoto">移除</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="btn btn-primary save" bindtap="save">保存回忆集</view>
+</view>
+
+<view wx:if="{{picking}}" class="mask" bindtap="closePicker">
+  <view class="sheet" catchtap="noop">
+    <view class="sheet-head">
+      <view>从照片库选择</view>
+      <view class="link" bindtap="closePicker">完成</view>
+    </view>
+    <photo-grid
+      photos="{{libraryPhotos}}"
+      select-mode="{{true}}"
+      selected-ids="{{photoIds}}"
+      bind:select="onPickPhoto"
+    />
+  </view>
+</view>

@@ -1,0 +1,115 @@
+page {
+  --bg: #F4EFE6;
+  --surface: #FFFBF5;
+  --ink: #2A241C;
+  --muted: #8A7E70;
+  --accent: #B85C38;
+  --accent-soft: #F3E0D4;
+  --line: #E6DCCE;
+  --danger: #C43C2C;
+  --shadow: transparent;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 28rpx;
+  line-height: 1.5;
+}
+
+.page {
+  min-height: 100vh;
+  padding: 24rpx 28rpx 48rpx;
+  box-sizing: border-box;
+}
+
+.page-title {
+  font-size: 44rpx;
+  font-weight: 600;
+  letter-spacing: 1rpx;
+}
+
+.page-sub {
+  margin-top: 8rpx;
+  color: var(--muted);
+  font-size: 24rpx;
+}
+
+.card {
+  background: var(--surface);
+  border: 1rpx solid var(--line);
+  border-radius: 20rpx;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80rpx;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-ghost {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.btn-danger {
+  background: #F8E4E1;
+  color: var(--danger);
+}
+
+.btn-plain {
+  background: transparent;
+  color: var(--ink);
+  border: 1rpx solid var(--line);
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 12rpx;
+  padding: 8rpx 0 4rpx;
+}
+
+.chip {
+  flex-shrink: 0;
+  padding: 10rpx 22rpx;
+  border-radius: 999rpx;
+  background: var(--surface);
+  border: 1rpx solid var(--line);
+  color: var(--muted);
+  font-size: 24rpx;
+}
+
+.chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.empty {
+  padding: 80rpx 24rpx;
+  text-align: center;
+}
+
+.empty-title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.empty-desc {
+  margin-top: 12rpx;
+  color: var(--muted);
+  font-size: 24rpx;
+}
+
+.safe-bottom {
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+}

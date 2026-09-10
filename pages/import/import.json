@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "导入",
+  "usingComponents": {
+    "photo-grid": "/components/photo-grid/photo-grid"
+  }
+}

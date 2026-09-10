@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "精选回忆库",
+    "slug": "photo-index-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F4EFE6"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "用于扫描系统相册并建立索引，不会复制或上传原图。",
+        "NSPhotoLibraryAddUsageDescription": "用于导出回忆集时保存图片。",
+        "NSLocationWhenInUseUsageDescription": "用于读取照片自带的拍摄地点。"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F4EFE6"
+      },
+      "permissions": [
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE",
+        "ACCESS_MEDIA_LOCATION"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "用于扫描系统相册并建立索引，不会复制或上传原图。",
+          "savePhotosPermission": "用于导出回忆集封面。",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
+    ]
+  }
+}

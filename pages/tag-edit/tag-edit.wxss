@@ -1,0 +1,31 @@
+.group {
+  margin-top: 36rpx;
+}
+
+.group-head {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-bottom: 16rpx;
+}
+
+.link {
+  color: var(--accent);
+  font-weight: 400;
+  font-size: 26rpx;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 24rpx;
+}
+
+.save {
+  margin-top: 48rpx;
+}

@@ -1,0 +1,31 @@
+{
+  "kind": "memory-library-export",
+  "version": 1,
+  "exportedAt": 1740000000000,
+  "memories": [
+    {
+      "id": "m_example_xiamen",
+      "title": "厦门周末",
+      "description": "App 索引后导出的示例回忆集",
+      "coverAssetId": "asset_1",
+      "photos": [
+        {
+          "assetId": "asset_1",
+          "filename": "IMG_1001.JPG",
+          "shotAt": 1739800000000,
+          "location": { "name": "厦门", "latitude": 24.4798, "longitude": 118.0894 },
+          "isScreenshot": false,
+          "burstGroupId": null
+        },
+        {
+          "assetId": "asset_2",
+          "filename": "IMG_1002.JPG",
+          "shotAt": 1739803600000,
+          "location": { "name": "厦门", "latitude": 24.4798, "longitude": 118.0894 },
+          "isScreenshot": false,
+          "burstGroupId": null
+        }
+      ]
+    }
+  ]
+}

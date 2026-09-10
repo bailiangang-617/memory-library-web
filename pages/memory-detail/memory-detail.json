@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "回忆集",
+  "usingComponents": {
+    "photo-grid": "/components/photo-grid/photo-grid"
+  }
+}

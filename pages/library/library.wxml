@@ -1,0 +1,77 @@
+<view class="page library">
+  <view class="head">
+    <view>
+      <view class="page-title">照片库</view>
+      <view class="page-sub">共 {{total}} 张 · 小程序只放精选，整机扫描请用 App</view>
+    </view>
+    <view wx:if="{{total}}" class="manage" bindtap="toggleSelectMode">{{selectMode ? '完成' : '管理'}}</view>
+  </view>
+
+  <scroll-view wx:if="{{total}}" class="chip-row" scroll-x>
+    <view class="chip {{filterKey === 'all' ? 'active' : ''}}" data-key="all" bindtap="onFilter">全部</view>
+    <view class="chip {{filterKey === 'month' ? 'active' : ''}}" data-key="month" bindtap="onFilter">时间</view>
+    <view class="chip {{filterKey === 'place' ? 'active' : ''}}" data-key="place" bindtap="onFilter">地点</view>
+    <view class="chip {{filterKey === 'people' ? 'active' : ''}}" data-key="people" bindtap="onFilter">人物</view>
+    <view class="chip {{filterKey === 'content' ? 'active' : ''}}" data-key="content" bindtap="onFilter">内容</view>
+    <view class="chip {{filterKey === 'inMemory' ? 'active' : ''}}" data-key="inMemory" bindtap="onFilter">入集</view>
+  </scroll-view>
+
+  <empty-state
+    wx:if="{{!total}}"
+    title="库还是空的"
+    desc="从相册挑出重要的照片，开始做一本属于自己的回忆库。"
+    action="去导入"
+    bind:action="goImport"
+  />
+
+  <block wx:for="{{groups}}" wx:key="key">
+    <view class="month">{{item.label}}</view>
+    <photo-grid
+      photos="{{item.photos}}"
+      select-mode="{{selectMode}}"
+      selected-ids="{{selectedIds}}"
+      bind:select="onPhotoTap"
+    />
+  </block>
+
+  <view wx:if="{{total && !groups.length}}" class="empty">
+    <view class="empty-title">没有符合条件的照片</view>
+    <view class="empty-desc">换一个筛选条件，或先给照片打上标签。</view>
+  </view>
+</view>
+
+<view wx:if="{{selectMode}}" class="batch safe-bottom">
+  <view class="btn btn-ghost" bindtap="onBatchTag">打标签</view>
+  <view class="btn btn-primary" bindtap="onBatchMemory">加入回忆集</view>
+  <view class="btn btn-danger" bindtap="onBatchDelete">删除</view>
+</view>
+
+<view wx:if="{{sheet}}" class="mask" bindtap="closeSheet">
+  <view class="sheet" catchtap="noop">
+    <view class="sheet-title">{{sheetTitle}}</view>
+    <view wx:if="{{sheet === 'month'}}">
+      <view wx:if="{{!monthOptions.length}}" class="sheet-empty">还没有可按时间筛选的照片</view>
+      <view
+        wx:for="{{monthOptions}}"
+        wx:key="key"
+        class="sheet-item"
+        data-key="{{item.key}}"
+        bindtap="onPickMonth"
+      >{{item.label}}</view>
+    </view>
+    <view wx:if="{{sheet === 'tag'}}">
+      <view wx:if="{{!tagOptions.length}}" class="sheet-empty">还没有这类标签，先到照片详情里添加。</view>
+      <view
+        wx:for="{{tagOptions}}"
+        wx:key="id"
+        class="sheet-item"
+        data-id="{{item.id}}"
+        bindtap="onPickTag"
+      >{{item.name}}</view>
+    </view>
+    <view wx:if="{{sheet === 'inMemory'}}">
+      <view class="sheet-item" data-value="yes" bindtap="onPickInMemory">已加入回忆集</view>
+      <view class="sheet-item" data-value="no" bindtap="onPickInMemory">尚未入集</view>
+    </view>
+  </view>
+</view>

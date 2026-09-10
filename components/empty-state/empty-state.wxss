@@ -1,0 +1,4 @@
+.action {
+  width: 320rpx;
+  margin: 36rpx auto 0;
+}

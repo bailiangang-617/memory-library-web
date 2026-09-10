@@ -1,0 +1,45 @@
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12rpx;
+}
+
+.manage {
+  padding-top: 10rpx;
+  color: var(--accent);
+  font-size: 26rpx;
+}
+
+.memory {
+  display: flex;
+  overflow: hidden;
+  margin-top: 20rpx;
+}
+
+.cover {
+  width: 220rpx;
+  height: 220rpx;
+  flex-shrink: 0;
+  background: #E6DCCE;
+}
+
+.cover.blank {
+  background: var(--accent-soft);
+}
+
+.meta {
+  flex: 1;
+  padding: 28rpx 24rpx;
+}
+
+.title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.desc {
+  margin-top: 10rpx;
+  color: var(--muted);
+  font-size: 24rpx;
+}

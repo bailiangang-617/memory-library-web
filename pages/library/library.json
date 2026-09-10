@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "照片库",
+  "usingComponents": {
+    "photo-grid": "/components/photo-grid/photo-grid",
+    "empty-state": "/components/empty-state/empty-state"
+  }
+}

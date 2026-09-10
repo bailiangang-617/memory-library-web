@@ -1,0 +1,10 @@
+<view wx:if="{{memory}}" class="page">
+  <view class="head">
+    <view class="page-title">{{memory.title}}</view>
+    <view class="manage" bindtap="edit">编辑</view>
+  </view>
+  <view class="page-sub">{{memory.photoCount}} 张{{memory.rangeLabel ? ' · ' + memory.rangeLabel : ''}}</view>
+  <view wx:if="{{memory.description}}" class="desc">{{memory.description}}</view>
+  <photo-grid photos="{{memory.photos}}" bind:select="openPhoto" />
+  <view class="btn btn-danger danger" bindtap="remove">删除回忆集</view>
+</view>

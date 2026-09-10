@@ -1,0 +1,101 @@
+.form {
+  padding: 8rpx 28rpx 24rpx;
+}
+
+.input {
+  height: 88rpx;
+  font-size: 32rpx;
+  border-bottom: 1rpx solid var(--line);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 80rpx;
+  margin-top: 16rpx;
+  font-size: 26rpx;
+}
+
+.section {
+  margin-top: 32rpx;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+  font-weight: 600;
+}
+
+.link {
+  color: var(--accent);
+  font-weight: 400;
+  font-size: 26rpx;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 24rpx;
+}
+
+.picked {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -8rpx;
+}
+
+.picked-item {
+  width: 33.333%;
+  padding: 8rpx;
+  box-sizing: border-box;
+}
+
+.picked-img {
+  display: block;
+  width: 100%;
+  height: 200rpx;
+  border-radius: 10rpx;
+  background: #E6DCCE;
+}
+
+.cover-mark,
+.remove {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+  text-align: center;
+}
+
+.cover-mark.on {
+  color: var(--accent);
+}
+
+.save {
+  margin-top: 40rpx;
+}
+
+.mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(42, 36, 28, 0.28);
+  display: flex;
+  align-items: flex-end;
+  z-index: 20;
+}
+
+.sheet {
+  width: 100%;
+  max-height: 78vh;
+  overflow: auto;
+  background: var(--surface);
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 24rpx 20rpx calc(24rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+  font-weight: 600;
+}
