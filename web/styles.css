@@ -1,11 +1,11 @@
 :root {
-  --bg: #f4efe6;
-  --surface: #fffbf5;
-  --ink: #2a241c;
-  --muted: #8a7e70;
-  --accent: #b85c38;
-  --accent-soft: #f3e0d4;
-  --line: #e6dcce;
+  --bg: #f6efe8;
+  --surface: #fffaf6;
+  --ink: #2c221f;
+  --muted: #8b746c;
+  --accent: #a0525a;
+  --accent-soft: #f3ddd9;
+  --line: #ead9d1;
   --danger: #c43c2c;
 }
 
@@ -202,3 +202,36 @@ textarea { min-height: 72px; resize: vertical; }
 .picked img { height: 96px; }
 
 .last-grid { margin-top: 12px; }
+
+.story-card { padding: 14px 16px; margin-top: 12px; cursor: pointer; text-align: left; width: 100%; }
+.story-card .kind { color: var(--accent); font-size: 12px; letter-spacing: 0.06em; }
+.story-card h3 { margin: 6px 0 4px; font-size: 17px; }
+.story-card .when { color: var(--muted); font-size: 12px; }
+.story-card .excerpt {
+  margin: 10px 0 0;
+  color: var(--ink);
+  white-space: pre-wrap;
+  max-height: 7.5em;
+  overflow: hidden;
+}
+.media-row { display: flex; gap: 6px; overflow-x: auto; margin-top: 10px; }
+.media-row img, .media-row video {
+  height: 88px;
+  width: 88px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--line);
+  flex: 0 0 auto;
+}
+.letter-name { margin-top: 10px; font-size: 13px; color: var(--muted); }
+.compose-types { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.file-btn { position: relative; overflow: hidden; }
+.file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.preview-frame {
+  width: 100%;
+  min-height: 280px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  margin-top: 12px;
+}

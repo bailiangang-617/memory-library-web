@@ -1,5 +1,5 @@
 {
-  "navigationBarTitleText": "照片库",
+  "navigationBarTitleText": "故事",
   "usingComponents": {
     "photo-grid": "/components/photo-grid/photo-grid",
     "empty-state": "/components/empty-state/empty-state"

@@ -1,19 +1,19 @@
 <view class="page">
-  <view class="page-title">导入</view>
-  <view class="page-sub">上万张照片由 App 扫描建索引。小程序只接收回忆集，或为某一集精选配图。</view>
+  <view class="page-title">记下</view>
+  <view class="page-sub">把聊天摘录、照片收进「我们的点滴」。读不到微信正在聊的内容。</view>
 
   <view class="hero card">
-    <view class="hero-kicker">推荐路径</view>
-    <view class="hero-title">从 App 导入回忆集</view>
-    <view class="hero-desc">在 App 里扫完相册、做成回忆集后，导出 memory-export-v1.json，再从聊天记录选择该文件。不会把整机照片传进小程序。</view>
+    <view class="hero-kicker">聊天摘录</view>
+    <view class="hero-title">从聊天文件导入一段对话</view>
+    <view class="hero-desc">请先在电脑版微信导出聊天，或把要留下的那段复制成文件后再选择。不会自动读取正在聊的记录。</view>
     <view class="btn btn-primary" bindtap="importFromApp">选择 App 导出文件</view>
     <view wx:if="{{importHint}}" class="hint" bindtap="goMemories">{{importHint}}，去回忆集看看</view>
   </view>
 
   <view class="hero card secondary">
     <view class="hero-kicker">补充配图</view>
-    <view class="hero-title">精选导入最多 {{maxCount}} 张</view>
-    <view class="hero-desc">只给某一集补几张图时才用。默认压预览图，不必上传原图，更不要试图导完全部相册。</view>
+    <view class="hero-title">照片最多 {{maxCount}} 张</view>
+    <view class="hero-desc">记下这一次一起拍的照片。默认压预览图，不必导入整机相册。</view>
     <view class="btn btn-ghost" bindtap="choosePhotos">从相册精选</view>
   </view>
 

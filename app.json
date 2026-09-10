@@ -11,7 +11,7 @@
   ],
   "window": {
     "navigationBarBackgroundColor": "#F4EFE6",
-    "navigationBarTitleText": "精选回忆库",
+    "navigationBarTitleText": "我们的点滴",
     "navigationBarTextStyle": "black",
     "backgroundColor": "#F4EFE6",
     "backgroundTextStyle": "dark"
@@ -24,25 +24,25 @@
     "list": [
       {
         "pagePath": "pages/library/library",
-        "text": "库",
+        "text": "故事",
         "iconPath": "assets/tab-library.png",
         "selectedIconPath": "assets/tab-library-active.png"
       },
       {
         "pagePath": "pages/memories/memories",
-        "text": "回忆集",
+        "text": "纪念",
         "iconPath": "assets/tab-memory.png",
         "selectedIconPath": "assets/tab-memory-active.png"
       },
       {
         "pagePath": "pages/import/import",
-        "text": "导入",
+        "text": "记下",
         "iconPath": "assets/tab-import.png",
         "selectedIconPath": "assets/tab-import-active.png"
       },
       {
         "pagePath": "pages/mine/mine",
-        "text": "我的",
+        "text": "我们",
         "iconPath": "assets/tab-mine.png",
         "selectedIconPath": "assets/tab-mine-active.png"
       }

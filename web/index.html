@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>精选回忆库</title>
+  <title>我们的点滴</title>
   <meta name="robots" content="noindex, nofollow" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
@@ -11,8 +11,8 @@
   <div id="gate" class="gate">
     <div class="gate-card">
       <p class="kicker">小范围预览</p>
-      <h1>精选回忆库</h1>
-      <p class="gate-desc">照片只存在你自己的浏览器里，不会上传到服务器。输入访问口令后即可使用。</p>
+      <h1>我们的点滴</h1>
+      <p class="gate-desc">把聊天摘录、照片、视频和电子信收成一条故事线。内容只存在你自己的浏览器里，不会上传到服务器。</p>
       <input id="gate-input" class="input" type="password" placeholder="访问口令" autocomplete="off" />
       <button id="gate-btn" class="btn primary" type="button">进入</button>
       <p id="gate-error" class="error hidden">口令不对</p>
@@ -22,22 +22,17 @@
   <div id="app" class="app hidden">
     <header class="top">
       <div>
-        <h1 id="page-title">照片库</h1>
-        <p id="page-sub" class="sub">只整理你选中的照片，不必导入整机相册</p>
+        <h1 id="page-title">故事</h1>
+        <p id="page-sub" class="sub">记录两个人的点点滴滴</p>
       </div>
-      <button id="manage-btn" class="text-btn hidden" type="button">管理</button>
     </header>
-
     <main id="main"></main>
-
     <nav class="tabbar">
-      <button data-tab="library" class="tab on" type="button">库</button>
-      <button data-tab="memories" class="tab" type="button">回忆集</button>
-      <button data-tab="import" class="tab" type="button">导入</button>
-      <button data-tab="mine" class="tab" type="button">我的</button>
+      <button data-tab="story" class="tab on" type="button">故事</button>
+      <button data-tab="add" class="tab" type="button">记下</button>
+      <button data-tab="mine" class="tab" type="button">我们</button>
     </nav>
   </div>
-
   <script src="./app.js"></script>
 </body>
 </html>

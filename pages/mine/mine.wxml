@@ -5,11 +5,11 @@
   <view class="stats">
     <view class="stat card">
       <view class="num">{{stats.photoCount}}</view>
-      <view class="label">照片</view>
+      <view class="label">影像</view>
     </view>
     <view class="stat card">
       <view class="num">{{stats.memoryCount}}</view>
-      <view class="label">回忆集</view>
+      <view class="label">纪念</view>
     </view>
     <view class="stat card">
       <view class="num">{{stats.tagCount}}</view>
@@ -27,6 +27,6 @@
     <view wx:for="{{cannot}}" wx:key="*this" class="line muted">{{item}}</view>
   </view>
 
-  <view class="btn btn-ghost" bindtap="goImport">导入回忆集 / 精选配图</view>
-  <view class="btn btn-danger danger" bindtap="clearAll">清空回忆库</view>
+  <view class="btn btn-ghost" bindtap="goImport">记下新的点滴</view>
+  <view class="btn btn-danger danger" bindtap="clearAll">清空本机故事</view>
 </view>

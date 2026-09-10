@@ -1,8 +1,8 @@
 <view class="page">
   <view class="head">
     <view>
-      <view class="page-title">回忆集</view>
-      <view class="page-sub">把一段日子收成一集，而不是停在时间轴里</view>
+      <view class="page-title">纪念</view>
+      <view class="page-sub">把一段日子收成一集</view>
     </view>
     <view wx:if="{{memories.length}}" class="manage" bindtap="createMemory">新建</view>
   </view>

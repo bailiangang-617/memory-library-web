@@ -1,5 +1,5 @@
 {
-  "navigationBarTitleText": "导入",
+  "navigationBarTitleText": "记下",
   "usingComponents": {
     "photo-grid": "/components/photo-grid/photo-grid"
   }

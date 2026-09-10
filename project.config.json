@@ -1,5 +1,5 @@
 {
-  "description": "精选回忆库",
+  "description": "我们的点滴",
   "packOptions": {
     "ignore": [],
     "include": []
@@ -44,7 +44,7 @@
   "compileType": "miniprogram",
   "libVersion": "3.7.0",
   "appid": "touristappid",
-  "projectname": "精选回忆库",
+  "projectname": "我们的点滴",
   "condition": {},
   "editorSetting": {
     "tabIndent": "insertSpaces",

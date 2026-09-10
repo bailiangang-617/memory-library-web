@@ -1,8 +1,8 @@
 <view class="page library">
   <view class="head">
     <view>
-      <view class="page-title">照片库</view>
-      <view class="page-sub">共 {{total}} 张 · 小程序只放精选，整机扫描请用 App</view>
+      <view class="page-title">故事</view>
+      <view class="page-sub">共 {{total}} 张已收下的影像</view>
     </view>
     <view wx:if="{{total}}" class="manage" bindtap="toggleSelectMode">{{selectMode ? '完成' : '管理'}}</view>
   </view>

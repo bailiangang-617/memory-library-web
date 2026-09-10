@@ -21,7 +21,7 @@ Page({
   clearAll() {
     wx.showModal({
       title: '清空回忆库',
-      content: '将删除小程序内的全部照片副本、标签和回忆集，不影响系统相册。',
+      content: '将删除小程序里记下的点滴，不影响微信和手机里的原文件。',
       confirmColor: '#C43C2C',
       success: (res) => {
         if (!res.confirm) return
