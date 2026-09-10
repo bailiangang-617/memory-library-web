@@ -1,6 +1,6 @@
 const ACCESS_CODE = "heziqing"
 const DB_NAME = "our-moments-v1"
-const MAX_EDGE = 1280
+const MAX_EDGE = 960
 
 const KINDS = [
   { type: "chat", label: "聊天" },
@@ -167,7 +167,7 @@ function compressImage(file) {
       canvas.toBlob((blob) => {
         URL.revokeObjectURL(src)
         resolve({ blob: blob || file, width: canvas.width, height: canvas.height })
-      }, "image/jpeg", 0.82)
+      }, "image/jpeg", 0.72)
     }
     img.onerror = () => {
       URL.revokeObjectURL(src)

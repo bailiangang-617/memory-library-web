@@ -5,14 +5,19 @@ const Cloud = {
   },
 
   async call(action, payload) {
-    const res = await fetch(window.CLOUD.functionUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Moments-Key": "heziqing"
-      },
-      body: JSON.stringify({ action, key: "heziqing", ...payload })
-    })
+    let res
+    try {
+      res = await fetch(window.CLOUD.functionUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Moments-Key": "heziqing"
+        },
+        body: JSON.stringify({ action, key: "heziqing", ...payload })
+      })
+    } catch (error) {
+      throw new Error("连不上云端，请换浏览器重试")
+    }
     const text = await res.text()
     let data = {}
     try {
@@ -27,15 +32,45 @@ const Cloud = {
     return data
   },
 
-  async blobToBase64(blob) {
+  async blobToChunks(blob) {
     const buffer = await blob.arrayBuffer()
     const bytes = new Uint8Array(buffer)
-    let binary = ""
-    const chunk = 0x8000
-    for (let i = 0; i < bytes.length; i += chunk) {
-      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk))
+    const size = 4500
+    const chunks = []
+    for (let i = 0; i < bytes.length; i += size) {
+      const slice = bytes.subarray(i, i + size)
+      let binary = ""
+      for (let j = 0; j < slice.length; j += 1) binary += String.fromCharCode(slice[j])
+      chunks.push(btoa(binary))
     }
-    return btoa(binary)
+    return chunks
+  },
+
+  async uploadBlob(file) {
+    const chunks = await this.blobToChunks(file.blob)
+    if (!chunks.length) throw new Error("文件是空的")
+    const fileIDs = []
+    for (let index = 0; index < chunks.length; index += 1) {
+      const part = await this.call("uploadChunk", {
+        uploadId: file.id,
+        index,
+        total: chunks.length,
+        data: chunks[index]
+      })
+      fileIDs.push(part.fileID)
+    }
+    const done = await this.call("finishUpload", {
+      fileIDs,
+      name: file.name,
+      mime: file.mime
+    })
+    return {
+      id: file.id,
+      name: file.name,
+      mime: file.mime,
+      fileID: done.fileID,
+      url: done.url || ""
+    }
   },
 
   async packFiles(files) {
@@ -52,12 +87,7 @@ const Cloud = {
         continue
       }
       if (!file.blob) continue
-      out.push({
-        id: file.id,
-        name: file.name,
-        mime: file.mime,
-        base64: await this.blobToBase64(file.blob)
-      })
+      out.push(await this.uploadBlob(file))
     }
     return out
   },
