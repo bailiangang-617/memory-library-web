@@ -211,9 +211,61 @@ function groupedEntries(list) {
   return groups
 }
 
+function isBackdrop(entry) {
+  return entry.id === "e_site_backdrop" || String(entry.body || "").includes("<!--backdrop-->")
+}
+
+function backdropEntry() {
+  return state.entries.find(isBackdrop)
+}
+
+function backdropUrl() {
+  const entry = backdropEntry()
+  const file = (entry?.files || []).find((item) => item.mime && item.mime.startsWith("image/"))
+  return fileUrl(file)
+}
+
+function applyBackdrop() {
+  const url = backdropUrl()
+  const layer = $("backdrop")
+  const img = $("backdrop-img")
+  document.body.classList.toggle("has-backdrop", !!url)
+  if (layer) layer.classList.toggle("hidden", !url)
+  if (img) img.src = url || ""
+}
+
+async function saveBackdrop(files) {
+  const image = (files || []).find((item) => item.mime && item.mime.startsWith("image/"))
+  if (!image) return alert("请先选一张照片")
+  const prev = backdropEntry()
+  await persistEntry({
+    id: prev?.id || "e_site_backdrop",
+    objectId: prev?.objectId,
+    type: "note",
+    title: "册子背景",
+    body: "<!--backdrop-->",
+    who: "words",
+    happenedAt: Date.now(),
+    createdAt: prev?.createdAt || Date.now(),
+    files: [image]
+  })
+  await loadAll()
+  applyBackdrop()
+}
+
+async function clearBackdrop() {
+  const prev = backdropEntry()
+  if (!prev) return
+  if (Cloud.on()) await Cloud.remove(prev)
+  else await deleteEntry(prev.id)
+  await loadAll()
+  applyBackdrop()
+}
+
 function bookEntries(who) {
-  if (who === "her") return state.entries.filter((item) => inferWho(item) === "her")
-  return state.entries.filter((item) => inferWho(item) !== "her")
+  const list = state.entries.filter((item) => !isBackdrop(item))
+  if (who === "her") return list.filter((item) => inferWho(item) === "her")
+  return list.filter((item) => inferWho(item) !== "her")
 }
 
 function mediaFiles(entry) {
@@ -400,6 +452,7 @@ function draftPreviewHtml(emptyText) {
 
 function render() {
   if (state.tab === "add") stashForm()
+  applyBackdrop()
   const titles = {
     door: ["贺紫钦", "与你的日子"],
     her: ["紫钦", "看她"],
@@ -438,7 +491,11 @@ function renderDoor() {
         <em>两个人走过的日子</em>
       </button>
     </div>
-    ${state.entries.some(isTrial) ? `<p class="sub" style="text-align:center;margin-top:22px"><button class="link" data-act="clear-demo" type="button">清掉试片</button></p>` : ""}
+    <p class="sub" style="text-align:center;margin-top:22px">
+      <label class="link file-btn">换背景<input id="f-backdrop" type="file" accept="image/*" /></label>
+      ${backdropEntry() ? `<button class="link" data-act="clear-backdrop" type="button">还原底色</button>` : ""}
+    </p>
+    ${state.entries.some(isTrial) ? `<p class="sub" style="text-align:center;margin-top:8px"><button class="link" data-act="clear-demo" type="button">清掉试片</button></p>` : ""}
   `
 }
 
@@ -698,6 +755,7 @@ function openSheet({ title, date, gallery, entries, deleteId }) {
         </article>
       </div>
       <div class="sheet-actions">
+        <button class="btn ghost" data-act="use-backdrop" type="button">用作背景</button>
         ${deleteId ? `<button class="btn danger" data-act="delete" data-id="${deleteId}" type="button">删除这一组</button>` : ""}
       </div>
     </div>
@@ -934,6 +992,7 @@ function renderDayLook(key) {
 }
 
 function isTrial(entry) {
+  if (isBackdrop(entry)) return false
   return !!entry.demo || String(entry.title || "").startsWith("试片")
 }
 
@@ -1170,6 +1229,27 @@ async function onMainClick(event) {
     closeSheet()
     return
   }
+  if (act.dataset.act === "use-backdrop") {
+    const tile = state.sheetGallery[albumIndex()]
+    const file = tile && tile.file && tile.file.mime.startsWith("image/") ? tile.file : null
+    if (!file) return alert("这一页不是照片")
+    try {
+      await saveBackdrop([file])
+      render()
+    } catch (error) {
+      alert(error.message || "换成背景失败")
+    }
+    return
+  }
+  if (act.dataset.act === "clear-backdrop") {
+    try {
+      await clearBackdrop()
+      render()
+    } catch (error) {
+      alert(error.message || "还原底色失败")
+    }
+    return
+  }
   if (act.dataset.act === "delete") {
     if (!confirm(Cloud.on() ? "删除后所有打开这个网站的人都看不到这条。" : "删除后只从这台浏览器里去掉。")) return
     try {
@@ -1236,6 +1316,16 @@ async function onMainChange(event) {
     const body = $("f-body")
     if (body) body.value = (body.value ? `${body.value}\n\n` : "") + text.slice(0, 20000)
     $("f-picked").textContent = `已读入 ${input.files[0].name}`
+    return
+  }
+  if (input.id === "f-backdrop" && input.files?.[0]) {
+    try {
+      const files = await filesFromInput(input.files)
+      await saveBackdrop(files)
+      render()
+    } catch (error) {
+      alert(error.message || "换成背景失败")
+    }
     return
   }
   if ((input.id === "f-files" || input.id === "f-camera") && input.files?.length) {
