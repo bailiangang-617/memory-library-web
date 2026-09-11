@@ -1127,12 +1127,16 @@ body.has-sheet .track { animation-play-state: paused; }
   letter-spacing: 0.2em;
 }
 .tale-guide {
-  max-width: 22em;
-  margin: 16px auto 0;
-  color: var(--muted);
+  max-width: 26em;
+  margin: 18px auto 0;
+  color: var(--ink);
   font-size: 15px;
-  line-height: 1.9;
-  letter-spacing: 0.16em;
+  line-height: 2;
+  letter-spacing: 0.08em;
+}
+.tale-guide.soft {
+  color: var(--muted);
+  font-size: 14px;
 }
 .tale-actions {
   display: grid;

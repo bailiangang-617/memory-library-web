@@ -990,7 +990,7 @@ function typeText(el, text, done) {
       el.classList.remove("is-typing")
       return done && done()
     }
-    window.setTimeout(step, 86)
+    window.setTimeout(step, 52)
   }
   step()
 }
@@ -998,18 +998,29 @@ function typeText(el, text, done) {
 function playIntroWords(her) {
   const line = $("tale-line")
   const guide = $("tale-guide")
-  const first = her ? "她的样子，又回来了。" : "缘分，借了一场巧合。"
-  const second = her ? "灯还亮着。" : "花还在开。"
+  const last = $("tale-guide-b")
+  const first = her ? "二月十七以后" : "从那一日的巧合说起"
+  const second = her
+    ? "她的样子便常常回来。本可以只是擦肩，却在同一盏灯下停住。后来才懂，那一日原是缘分，借了一场巧遇。"
+    : "年里见过四面，其后隔山隔水，话却夜夜能递到她那里。四月十九，人到广州，把花递过去，爱情才有了着落。"
+  const third = her
+    ? "灯下的侧脸，广州的风，后来又见的几次，都还在心上。先看最近的几页，再把整本册子交给你。"
+    : "后来又见了几次。不算多，却够把日子轻轻叠起来。先看最近走过的，再让回忆自己往前流。"
   if (prefersQuietMotion()) {
     if (line) line.textContent = first
     if (guide) guide.textContent = second
-    scheduleTale(2000, taleGo)
+    if (last) last.textContent = third
+    scheduleTale(3200, taleGo)
     return
   }
   typeText(line, first, () => {
     window.setTimeout(() => {
-      typeText(guide, second, () => scheduleTale(1500, taleGo))
-    }, 420)
+      typeText(guide, second, () => {
+        window.setTimeout(() => {
+          typeText(last, third, () => scheduleTale(2000, taleGo))
+        }, 480)
+      })
+    }, 380)
   })
 }
 
@@ -1024,6 +1035,7 @@ function renderTale() {
         <div class="flourish tale-fade late" aria-hidden="true"><span></span></div>
         <p class="cover-line tale-type" id="tale-line"></p>
         <p class="tale-guide tale-type" id="tale-guide"></p>
+        <p class="tale-guide tale-type soft" id="tale-guide-b"></p>
       </section>
     `
     playIntroWords(her)
