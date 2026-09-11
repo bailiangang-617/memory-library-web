@@ -753,7 +753,7 @@ function splitRows(items, rows) {
 
 function wallHtml(items, htmlFn) {
   if (!items.length) return ""
-  const rows = 5
+  const rows = 4
   return `<div class="wall" data-wall>
     ${splitRows(items, rows).map((row, i) => {
       const inner = row.map(htmlFn).join("")
