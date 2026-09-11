@@ -211,7 +211,7 @@ body.has-backdrop .cover-mark,
 body.has-backdrop .book-head .cover-mark,
 body.has-backdrop .tale-intro .cover-mark,
 body.has-backdrop .book-head .link {
-  color: #2a1f32;
+  color: #6e4d7e;
   text-shadow:
     0 1px 0 rgba(255, 250, 253, 0.96),
     1px 0 0 rgba(255, 250, 253, 0.92),
@@ -221,7 +221,7 @@ body.has-backdrop .book-head .link {
 body.has-backdrop .cover-name,
 body.has-backdrop .book-head .cover-name,
 body.has-backdrop .tale-intro .cover-name {
-  color: #22182a;
+  color: #5a3870;
   text-shadow:
     0 1px 0 rgba(255, 250, 253, 0.96),
     1px 0 0 rgba(255, 250, 253, 0.92),
@@ -229,7 +229,7 @@ body.has-backdrop .tale-intro .cover-name {
     0 -1px 0 rgba(255, 250, 253, 0.92);
 }
 body.has-backdrop .cover-line {
-  color: #2c2236;
+  color: #5a3870;
   text-shadow:
     0 1px 0 rgba(255, 250, 253, 0.95),
     1px 0 0 rgba(255, 250, 253, 0.9),
@@ -616,7 +616,7 @@ body.is-view .tabbar { display: none; }
   margin: 0;
   font-size: 16px;
   letter-spacing: 0.2em;
-  color: var(--ink);
+  color: var(--accent);
   background: none;
   border: 0;
   padding: 0;
@@ -638,16 +638,16 @@ body.is-view .tabbar { display: none; }
   font-size: 13px;
   line-height: 1.7;
   letter-spacing: 0.04em;
-  color: #2c2236;
-  background: rgba(255, 250, 253, 0.9);
-  border: 1px solid rgba(230, 216, 236, 0.7);
+  color: #5a3870;
+  background: rgba(243, 238, 246, 0.92);
+  border: 1px solid rgba(196, 165, 116, 0.35);
   border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(44, 34, 54, 0.08);
+  box-shadow: 0 8px 20px rgba(110, 77, 126, 0.08);
 }
 body.has-backdrop .wall-line {
-  color: #2c2236;
+  color: #5a3870;
   text-shadow: none;
-  background: rgba(255, 250, 253, 0.92);
+  background: rgba(243, 238, 246, 0.94);
 }
 
 .wall {
