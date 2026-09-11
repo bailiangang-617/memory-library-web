@@ -455,6 +455,8 @@ body.is-view [data-tab="add"] { display: none; }
 [data-enter="write"] .about-row,
 [data-enter="write"] .compose-types,
 [data-enter="write"] .form { animation: cover-rise 0.5s ease both; }
+[data-enter="tale"] .tale-intro,
+[data-enter="tale"] .tale-stage { animation: cover-rise 0.8s ease both; }
 @keyframes book-enter {
   from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: none; }
@@ -524,6 +526,11 @@ body.is-view [data-tab="add"] { display: none; }
 .book-head {
   text-align: center;
   padding: 6px 8px 0;
+}
+.book-head .link.quiet {
+  display: block;
+  margin: 4px auto 0;
+  font-size: 12px;
 }
 .book-head .cover-name {
   margin: 0;
@@ -1085,6 +1092,92 @@ body.has-sheet .track { animation-play-state: paused; }
   position: absolute;
   display: block;
   max-width: none;
+}
+
+.tale {
+  min-height: calc(100vh - 96px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px 24px;
+}
+.tale-intro { flex-direction: column; text-align: center; }
+.tale-actions {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  margin-top: 28px;
+}
+.tale-play { width: 100%; padding: 0; }
+.tale-stage {
+  position: relative;
+  width: min(920px, 100%);
+  min-height: min(72vh, 640px);
+  overflow: hidden;
+  border-radius: 8px 8px 22px 22px;
+  background: #2c2236;
+}
+.tale-media {
+  display: block;
+  width: 100%;
+  height: min(72vh, 640px);
+  object-fit: cover;
+  object-position: center 28%;
+}
+.tale-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(44, 34, 54, 0.08) 0%, rgba(44, 34, 54, 0.18) 42%, rgba(44, 34, 54, 0.72) 100%);
+  pointer-events: none;
+}
+.tale-words {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 36px;
+  color: #fffafd;
+  text-shadow: 0 1px 12px rgba(44, 34, 54, 0.45);
+}
+.tale-date {
+  margin: 0;
+  color: var(--gold);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "SimSun", serif;
+}
+.tale-words h2 {
+  margin: 8px 0 0;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "SimSun", serif;
+}
+.tale-words p {
+  margin: 8px 0 0;
+  line-height: 1.75;
+  font-size: 14px;
+}
+.tale-dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.tale-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 250, 253, 0.35);
+}
+.tale-dots i.on { background: var(--gold); }
+.tale-skip {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  color: rgba(255, 250, 253, 0.78);
 }
 
 .folio {

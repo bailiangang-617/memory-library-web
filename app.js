@@ -31,7 +31,8 @@ const state = {
   draftUrls: [],
   draftTitle: "",
   draftWhen: "",
-  draftBody: ""
+  draftBody: "",
+  tale: { book: "", phase: "wall", index: 0, scenes: [] }
 }
 
 let dbPromise = null
@@ -39,6 +40,7 @@ let memoryOnly = false
 const memoryDb = { entries: [] }
 const urlCache = new Map()
 let crop = null
+let taleWait = 0
 
 function $(id) {
   return document.getElementById(id)
@@ -708,7 +710,8 @@ function render() {
   else renderDoor()
   const main = $("main")
   if (main) {
-    main.dataset.enter = state.tab === "add" ? "write" : state.tab === "door" ? "door" : "book"
+    const telling = (state.tab === "her" || state.tab === "us") && (state.tale.phase === "intro" || state.tale.phase === "play")
+    main.dataset.enter = telling ? "tale" : state.tab === "add" ? "write" : state.tab === "door" ? "door" : "book"
   }
 }
 
@@ -793,11 +796,157 @@ function wallHtml(items, htmlFn) {
   </div>`
 }
 
+function taleDone(book) {
+  return sessionStorage.getItem(`om_tale_${book}`) === "1"
+}
+
+function markTaleDone(book) {
+  if (book) sessionStorage.setItem(`om_tale_${book}`, "1")
+}
+
+function taleExcerpt(text) {
+  const raw = String(text || "").trim()
+  if (raw.length <= 80) return raw
+  return `${raw.slice(0, 78)}…`
+}
+
+function taleScenes(book) {
+  if (book === "her") {
+    return herCards()
+      .filter((card) => card.cover)
+      .slice(0, 4)
+      .map((card) => ({
+        date: formatDay(card.entry.happenedAt),
+        title: prettyTitle(card.entry),
+        body: taleExcerpt(card.entry.body),
+        file: card.cover,
+        open: card.entry.id
+      }))
+  }
+  return usYearGroups(bookEntries("us"))
+    .flatMap((block) => block.seasons.flatMap((season) => season.days))
+    .filter((day) => dayMedia(day).length)
+    .slice(0, 4)
+    .map((day) => {
+      const titled = day.entries.find((item) => prettyTitle(item)) || day.entries[0]
+      const body = day.entries.map((item) => item.body).find((item) => item && item.trim()) || ""
+      return {
+        date: formatDay(day.at),
+        title: prettyTitle(titled),
+        body: taleExcerpt(body),
+        file: dayMedia(day)[0].file,
+        day: day.key
+      }
+    })
+}
+
+function stopTaleTimer() {
+  window.clearTimeout(taleWait)
+  taleWait = 0
+}
+
+function beginTale(book, replay) {
+  const scenes = taleScenes(book)
+  if (!scenes.length || prefersQuietMotion()) {
+    state.tale = { book, phase: "wall", index: 0, scenes: [] }
+    if (scenes.length) markTaleDone(book)
+    return
+  }
+  if (!replay && taleDone(book)) {
+    state.tale = { book, phase: "wall", index: 0, scenes }
+    return
+  }
+  state.tale = { book, phase: "intro", index: 0, scenes }
+}
+
+function finishTale() {
+  stopTaleTimer()
+  const book = state.tale.book || (state.tab === "us" ? "us" : "her")
+  markTaleDone(book)
+  state.tale = { book, phase: "wall", index: 0, scenes: state.tale.scenes || [] }
+  render()
+}
+
+function taleGo() {
+  stopTaleTimer()
+  if (!state.tale.scenes.length) return finishTale()
+  state.tale.phase = "play"
+  state.tale.index = 0
+  render()
+}
+
+function taleNext() {
+  stopTaleTimer()
+  if (state.tale.index >= state.tale.scenes.length - 1) return finishTale()
+  state.tale.index += 1
+  render()
+}
+
+function scheduleTale(ms, fn) {
+  stopTaleTimer()
+  if (prefersQuietMotion()) return fn()
+  taleWait = window.setTimeout(fn, ms)
+}
+
+function renderTale() {
+  const tale = state.tale
+  const her = tale.book === "her"
+  if (tale.phase === "intro") {
+    $("main").innerHTML = `
+      <section class="tale tale-intro">
+        <p class="cover-mark">${her ? "先看她" : "先看我们"}</p>
+        <h2 class="cover-name">${her ? "紫钦" : "我们"}</h2>
+        <div class="flourish" aria-hidden="true"><span></span></div>
+        <p class="cover-line">${her ? "先把她最近的样子，慢慢看一遍。" : "先把最近走过的日子，轻轻过一遍。"}</p>
+        <div class="tale-actions">
+          <button class="btn ghost" data-act="tale-go" type="button">往下看</button>
+          <button class="link quiet" data-act="skip-tale" type="button">自己看</button>
+        </div>
+      </section>
+    `
+    scheduleTale(3200, taleGo)
+    return
+  }
+  const scene = tale.scenes[tale.index]
+  if (!scene) return finishTale()
+  const video = scene.file && scene.file.mime.startsWith("video/")
+  $("main").innerHTML = `
+    <section class="tale tale-play">
+      <div class="tale-stage">
+        ${video
+          ? `<video class="tale-media" src="${fileUrl(scene.file)}" muted playsinline autoplay></video>`
+          : `<img class="tale-media" src="${fileUrl(scene.file)}" alt="" />`}
+        <div class="tale-veil"></div>
+        <div class="tale-words">
+          <p class="tale-date">${escapeHtml(scene.date)}</p>
+          ${scene.title ? `<h2>${escapeHtml(scene.title)}</h2>` : ""}
+          ${scene.body ? `<p>${escapeHtml(scene.body)}</p>` : ""}
+        </div>
+        <div class="tale-dots">${tale.scenes.map((_, i) => `<i class="${i === tale.index ? "on" : ""}"></i>`).join("")}</div>
+        <button class="link quiet tale-skip" data-act="skip-tale" type="button">自己看</button>
+      </div>
+    </section>
+  `
+  const media = document.querySelector(".tale-media")
+  if (video && media) {
+    media.addEventListener("ended", () => {
+      if (state.tale.phase === "play" && state.tale.index === tale.index) taleNext()
+    }, { once: true })
+    scheduleTale(9000, taleNext)
+    return
+  }
+  scheduleTale(6200, taleNext)
+}
+
 function renderHer() {
+  if (state.tale.book === "her" && (state.tale.phase === "intro" || state.tale.phase === "play")) {
+    return renderTale()
+  }
   const cards = herCards()
   $("main").innerHTML = `
     <section class="book-head">
       <button class="cover-name" data-tab="door" type="button">紫钦</button>
+      ${cards.length ? `<button class="link quiet" data-act="replay-tale" type="button">再讲一遍</button>` : ""}
     </section>
     ${cards.length ? wallHtml(cards, polaroidHtml) : `<div class="empty"><p>她的样子，还在来的路上。</p></div>`}
   `
@@ -1113,10 +1262,14 @@ function openDaySheet(key) {
 }
 
 function renderUs() {
+  if (state.tale.book === "us" && (state.tale.phase === "intro" || state.tale.phase === "play")) {
+    return renderTale()
+  }
   const days = usYearGroups(bookEntries("us")).flatMap((block) => block.seasons.flatMap((season) => season.days))
   $("main").innerHTML = `
     <section class="book-head">
       <button class="cover-name" data-tab="door" type="button">我们</button>
+      ${days.length ? `<button class="link quiet" data-act="replay-tale" type="button">再讲一遍</button>` : ""}
     </section>
     ${days.length ? wallHtml(days, capsuleHtml) : `<div class="empty"><p>那些日子，还在来的路上。</p></div>`}
   `
@@ -1433,6 +1586,7 @@ function bindEvents() {
     if (event.key === "Escape") {
       if (cropOpen()) closeCropper()
       else if (state.peek >= 0) closePeek()
+      else if (state.tale.phase === "intro" || state.tale.phase === "play") finishTale()
       else closeSheet()
       return
     }
@@ -1643,6 +1797,12 @@ function onSheetClick(event) {
 
 function switchTab(tab) {
   if (tab === "add" && !canWrite()) return
+  if (tab === state.tab && (state.tale.phase === "intro" || state.tale.phase === "play")) {
+    finishTale()
+    return
+  }
+  if (tab === state.tab) return
+  stopTaleTimer()
   closeSheet()
   if (tab !== "add") clearDraft()
   state.tab = tab
@@ -1652,6 +1812,8 @@ function switchTab(tab) {
   state.slide = 0
   if (tab === "her") state.about = "her"
   if (tab === "us") state.about = "us"
+  if (tab === "her" || tab === "us") beginTale(tab)
+  else state.tale = { book: "", phase: "wall", index: 0, scenes: [] }
   render()
 }
 
@@ -1700,6 +1862,19 @@ async function onMainClick(event) {
   if (event.target.id === "f-save") return canWrite() ? saveCompose() : null
   const act = event.target.closest("[data-act]")
   if (!act) return
+  if (act.dataset.act === "tale-go") {
+    taleGo()
+    return
+  }
+  if (act.dataset.act === "skip-tale") {
+    finishTale()
+    return
+  }
+  if (act.dataset.act === "replay-tale") {
+    beginTale(state.tab === "us" ? "us" : "her", true)
+    render()
+    return
+  }
   if (!canWrite() && ["edit-words", "use-backdrop", "clear-backdrop", "delete", "clear-demo", "clear", "save-edit"].includes(act.dataset.act)) return
   if (act.dataset.act === "back" || act.dataset.act === "close-sheet") {
     closeSheet()
@@ -1847,6 +2022,8 @@ async function saveCompose() {
     clearDraft()
     state.tab = who === "her" ? "her" : "us"
     state.about = who === "her" ? "her" : "us"
+    stopTaleTimer()
+    state.tale = { book: state.tab, phase: "wall", index: 0, scenes: [] }
     render()
     if (saved && (type === "photo" || type === "video" || type === "letter")) openEntrySheet(saved.id)
   } catch (error) {
