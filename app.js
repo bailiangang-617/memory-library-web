@@ -693,8 +693,8 @@ function render() {
   applyBackdrop()
   const titles = {
     door: ["贺紫钦", "二月十七，往后都是"],
-    her: ["紫钦", "灯下的样子"],
-    us: ["我们", "从那一日的巧合说起"],
+    her: ["紫钦", "她的样子"],
+    us: ["我们", "从那一日的引见说起"],
     add: ["写下", "把那天再放进来"]
   }
   if (!canWrite() && state.tab === "add") state.tab = "door"
@@ -733,11 +733,11 @@ function renderDoor() {
         <p class="cover-mark">写给贺紫钦</p>
         <h2 class="cover-name">贺紫钦</h2>
         <div class="flourish" aria-hidden="true"><span></span></div>
-        <p class="cover-line">初见的灯还亮着，花已经开过一季</p>
+        <p class="cover-line">朋友一引，她便来了。花已经开过一季</p>
       </div>
     </section>
     <div class="doors">
-      ${doorHtml("her", "看她", "灯下的样子")}
+      ${doorHtml("her", "看她", "她的样子")}
       ${doorHtml("us", "看我们", "年里四面，其后千里")}
     </div>
     ${canWrite() && state.entries.some(isTrial) ? `<p class="sub" style="text-align:center;margin-top:22px"><button class="link" data-act="clear-demo" type="button">清掉试片</button></p>` : ""}
@@ -999,12 +999,12 @@ function playIntroWords(her) {
   const line = $("tale-line")
   const guide = $("tale-guide")
   const last = $("tale-guide-b")
-  const first = her ? "二月十七以后" : "从那一日的巧合说起"
+  const first = her ? "二月十七以后" : "从朋友那一句介绍说起"
   const second = her
-    ? "她的样子便常常回来。本可以只是擦肩，却在同一盏灯下停住。后来才懂，那一日原是缘分，借了一场巧遇。"
+    ? "她的样子便常常回来。不是擦肩，是朋友轻轻一引，她便站到了眼前。后来才懂，那一日原是缘分，借了一场引见。"
     : "年里见过四面，其后隔山隔水，话却夜夜能递到她那里。四月十九，人到广州，把花递过去，爱情才有了着落。"
   const third = her
-    ? "灯下的侧脸，广州的风，后来又见的几次，都还在心上。先看最近的几页，再把整本册子交给你。"
+    ? "广州的风，后来又见的几次，都还在心上。先看最近的几页，再把整本册子交给你。"
     : "后来又见了几次。不算多，却够把日子轻轻叠起来。先看最近走过的，再让回忆自己往前流。"
   if (prefersQuietMotion()) {
     if (line) line.textContent = first
@@ -1380,7 +1380,7 @@ function renderUs() {
       <button class="cover-mark" data-tab="door" type="button">回到封面</button>
       <h2 class="cover-name">我们</h2>
       <div class="flourish slim" aria-hidden="true"><span></span></div>
-      <p class="cover-line">一场巧遇起，年里四面，隔水说话。</p>
+      <p class="cover-line">一场引见起，年里四面，隔水说话。</p>
       ${days.length ? `<button class="link quiet" data-act="replay-tale" type="button">从头看</button>` : ""}
     </section>
     ${days.length ? wallHtml(days, capsuleHtml) : `<div class="empty"><p>从初见那一日写起，也好。</p></div>`}
