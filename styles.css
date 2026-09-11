@@ -386,6 +386,15 @@ textarea { min-height: 88px; resize: vertical; }
   margin-top: 12px;
 }
 
+.backdrop-pick {
+  display: block;
+  width: 100%;
+  height: 88px;
+  object-fit: cover;
+  object-position: center 30%;
+  border-radius: 10px;
+  background: var(--accent-soft);
+}
 .about-row { display: flex; gap: 8px; }
 .about-row .btn { flex: 1; }
 

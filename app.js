@@ -491,11 +491,7 @@ function renderDoor() {
         <em>两个人走过的日子</em>
       </button>
     </div>
-    <p class="sub" style="text-align:center;margin-top:22px">
-      <label class="link file-btn">换背景<input id="f-backdrop" type="file" accept="image/*" /></label>
-      ${backdropEntry() ? `<button class="link" data-act="clear-backdrop" type="button">还原底色</button>` : ""}
-    </p>
-    ${state.entries.some(isTrial) ? `<p class="sub" style="text-align:center;margin-top:8px"><button class="link" data-act="clear-demo" type="button">清掉试片</button></p>` : ""}
+    ${state.entries.some(isTrial) ? `<p class="sub" style="text-align:center;margin-top:22px"><button class="link" data-act="clear-demo" type="button">清掉试片</button></p>` : ""}
   `
 }
 
@@ -834,6 +830,14 @@ function renderAdd() {
       ` : ""}
       ${type === "photo" ? draftPreviewHtml("照片和视频可以放在同一组，墙上只占一格。") : draftPreviewHtml("可拍多页手写，也可放入 Word、PDF。")}
       <button class="btn primary" id="f-save" type="button">放进${state.about === "her" ? "她的册子" : "我们的册子"}</button>
+    </section>
+    <section class="card form">
+      <p class="muted">册子上方的底，可以嵌进一张照片，并和下方纸色慢慢融合。</p>
+      ${backdropUrl() ? `<img class="backdrop-pick" src="${backdropUrl()}" alt="" />` : ""}
+      <div class="row-btns">
+        <label class="btn ghost file-btn">换封面背景<input id="f-backdrop" type="file" accept="image/*" /></label>
+        ${backdropEntry() ? `<button class="btn plain" data-act="clear-backdrop" type="button">还原底色</button>` : ""}
+      </div>
     </section>
   `
 }
