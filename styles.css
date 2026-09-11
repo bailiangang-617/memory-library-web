@@ -766,9 +766,9 @@ body.has-sheet .track { animation-play-state: paused; }
 }
 
 @media (max-width: 680px) {
-  .sheet-card { height: min(82vh, 700px); }
+  .sheet-card { height: auto; max-height: min(86vh, 760px); }
   .sheet-split {
     grid-template-columns: 1fr;
-    grid-template-rows: 54% 1fr;
+    grid-template-rows: auto 1fr;
   }
 }
