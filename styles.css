@@ -330,6 +330,22 @@ textarea { min-height: 88px; resize: vertical; }
   line-height: 1;
   box-shadow: 0 0 0 1px var(--line);
 }
+.draft-doc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 10px;
+  line-height: 1.3;
+  word-break: break-all;
+  overflow: hidden;
+}
 .preview-frame {
   width: 100%;
   min-height: 280px;

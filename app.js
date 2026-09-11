@@ -2,9 +2,8 @@ const ACCESS_CODE = "heziqing"
 const DB_NAME = "our-moments-v1"
 
 const KINDS = [
+  { type: "photo", label: "照片集" },
   { type: "chat", label: "聊天" },
-  { type: "photo", label: "照片" },
-  { type: "video", label: "视频" },
   { type: "letter", label: "电子信" },
   { type: "note", label: "一句话" }
 ]
@@ -47,6 +46,7 @@ function uid(prefix) {
 }
 
 function kindLabel(type) {
+  if (type === "video") return "照片集"
   return (KINDS.find((item) => item.type === type) || {}).label || type
 }
 
@@ -377,20 +377,24 @@ function removeDraft(index) {
   state.draftUrls.splice(index, 1)
 }
 
-function draftPreviewHtml() {
+function draftThumb(file, url) {
+  if (file.type.startsWith("image/")) return `<img src="${url}" alt="" />`
+  if (file.type.startsWith("video/")) return `<video src="${url}" muted playsinline></video>`
+  return `<span class="draft-doc">${escapeHtml(file.name)}</span>`
+}
+
+function draftPreviewHtml(emptyText) {
   if (!state.draftFiles.length) {
-    return `<p id="f-picked" class="muted">一次可多选，以后也能继续加。墙上只占一格。</p>`
+    return `<p id="f-picked" class="muted">${emptyText}</p>`
   }
   return `<div id="f-picked" class="draft-row">
     ${state.draftFiles.map((file, i) => `
       <span class="draft-item">
-        ${file.type.startsWith("image/")
-          ? `<img src="${state.draftUrls[i]}" alt="" />`
-          : `<video src="${state.draftUrls[i]}" muted playsinline></video>`}
-        <button type="button" data-draft-remove="${i}" aria-label="去掉这张">×</button>
+        ${draftThumb(file, state.draftUrls[i])}
+        <button type="button" data-draft-remove="${i}" aria-label="去掉">×</button>
       </span>
     `).join("")}
-    <p class="muted">${state.draftFiles.length} 张，会收成一组</p>
+    <p class="muted">${state.draftFiles.length} 份，会收成一组</p>
   </div>`
 }
 
@@ -746,11 +750,11 @@ function renderUs() {
 }
 
 function renderAdd() {
-  if (state.about === "her" && state.compose !== "photo" && state.compose !== "video") {
-    state.compose = "photo"
-  }
+  if (state.compose === "video") state.compose = "photo"
+  if (state.about === "her" && state.compose !== "photo") state.compose = "photo"
   const type = state.compose
-  const kinds = state.about === "her" ? KINDS.filter((item) => item.type === "photo" || item.type === "video") : KINDS
+  const kinds = state.about === "her" ? KINDS.filter((item) => item.type === "photo") : KINDS
+  const letterAccept = "image/*,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
   $("main").innerHTML = `
     <div class="about-row" style="margin-top:8px">
       <button class="btn ${state.about === "her" ? "primary" : "plain"}" data-about="her" type="button">紫钦</button>
@@ -762,12 +766,18 @@ function renderAdd() {
     <section class="card form">
       <input id="f-title" class="input" placeholder="${titlePlaceholder(type)}" value="${escapeHtml(state.draftTitle || "")}" />
       <input id="f-when" class="input" type="datetime-local" value="${escapeHtml(state.draftWhen || toDatetimeLocal(Date.now()))}" />
-      <textarea id="f-body" placeholder="${type === "chat" ? "把想留下的那几句贴进来。" : type === "photo" || type === "video" ? "写给这一组的话，点开墙会显示在右边。" : "想在旁边写一句吗？也可以不写。"}">${escapeHtml(state.draftBody || "")}</textarea>
+      <textarea id="f-body" placeholder="${type === "chat" ? "把想留下的那几句贴进来。" : type === "photo" ? "写给这一组的话，点开墙会显示在右边。" : type === "letter" ? "想在信旁边写一句也可以。" : "想在旁边写一句吗？也可以不写。"}">${escapeHtml(state.draftBody || "")}</textarea>
       ${type === "chat" ? `<label class="btn ghost file-btn">从导出的对话读入<input id="f-chatfile" type="file" accept=".txt,.html,.htm,text/plain,text/html" /></label>` : ""}
-      ${type === "photo" ? `<label class="btn ghost file-btn">${state.draftFiles.length ? "再放入几张" : "放入这一组的照片"}<input id="f-files" type="file" accept="image/*" multiple /></label>` : ""}
-      ${type === "video" ? `<label class="btn ghost file-btn">${state.draftFiles.length ? "再放入几段" : "放入这一组的视频"}<input id="f-files" type="file" accept="video/*" multiple /></label>` : ""}
-      ${type === "letter" ? `<label class="btn ghost file-btn">放入信<input id="f-files" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label>` : ""}
-      ${type === "photo" || type === "video" ? draftPreviewHtml() : `<p id="f-picked" class="muted"></p>`}
+      ${type === "photo" ? `<label class="btn ghost file-btn">${state.draftFiles.length ? "再放入照片或视频" : "放入照片或视频"}<input id="f-files" type="file" accept="image/*,video/*" multiple /></label>` : ""}
+      ${type === "letter" ? `
+        <div class="row-btns">
+          <label class="btn ghost file-btn">拍下手写信<input id="f-camera" type="file" accept="image/*" capture="environment" multiple /></label>
+          <label class="btn ghost file-btn">放入照片、Word 或 PDF<input id="f-files" type="file" accept="${letterAccept}" multiple /></label>
+        </div>
+      ` : ""}
+      ${type === "photo" ? draftPreviewHtml("照片和视频可以放在同一组，墙上只占一格。") : ""}
+      ${type === "letter" ? draftPreviewHtml("可拍多页手写，也可放入 Word、PDF。") : ""}
+      ${type !== "photo" && type !== "letter" ? `<p id="f-picked" class="muted"></p>` : ""}
       <button class="btn primary" id="f-save" type="button">放进${state.about === "her" ? "她的册子" : "我们的册子"}</button>
     </section>
   `
@@ -776,8 +786,7 @@ function renderAdd() {
 function titlePlaceholder(type) {
   if (type === "chat") return "可以写一个名字，比如 那天晚上"
   if (type === "photo") return "这一组，想叫它什么"
-  if (type === "video") return "这一组视频，想叫它什么"
-  if (type === "letter") return "这封信"
+  if (type === "letter") return "这封信，想叫它什么"
   return "比如 在一起的某一天"
 }
 
@@ -1122,7 +1131,7 @@ async function onMainClick(event) {
   const about = event.target.closest("[data-about]")
   if (about) {
     state.about = about.dataset.about
-    if (state.about === "her" && state.compose !== "photo" && state.compose !== "video") state.compose = "photo"
+    if (state.about === "her") state.compose = "photo"
     render()
     return
   }
@@ -1135,9 +1144,9 @@ async function onMainClick(event) {
   const compose = event.target.closest("[data-compose]")
   if (compose) {
     const next = compose.dataset.compose
-    if (next !== "photo" && next !== "video") clearDraft()
+    if (next !== "photo" && next !== "letter") clearDraft()
     state.compose = next
-    if (state.compose === "photo" || state.compose === "video") state.about = state.about || "her"
+    if (state.compose === "photo") state.about = state.about || "her"
     render()
     return
   }
@@ -1233,7 +1242,7 @@ async function onMainChange(event) {
     $("f-picked").textContent = `已读入 ${input.files[0].name}`
     return
   }
-  if (input.id === "f-files" && input.files?.length) {
+  if ((input.id === "f-files" || input.id === "f-camera") && input.files?.length) {
     addDraftFiles(input.files)
     input.value = ""
     render()
@@ -1247,16 +1256,13 @@ async function saveCompose() {
   const when = state.draftWhen ? new Date(state.draftWhen).getTime() : Date.now()
   const body = (state.draftBody || "").trim()
   let files = []
-  if (type === "letter") {
-    const fileInput = $("f-files")
-    if (fileInput?.files?.length) files = await filesFromInput(fileInput.files)
-  } else if (state.draftFiles.length) {
+  if (type === "photo" || type === "letter" || type === "video") {
     files = await filesFromInput(state.draftFiles)
   }
   if (type === "chat" && !body) return alert("请贴上想留下的那几句")
   if (type === "note" && !body) return alert("请写一句想记住的话")
-  if ((type === "photo" || type === "video" || type === "letter") && !files.length) {
-    return alert("请先放入文件")
+  if ((type === "photo" || type === "letter") && !files.length) {
+    return alert(type === "letter" ? "请先拍下或放入这封信" : "请先放入照片或视频")
   }
   const who = type === "photo" || type === "video" ? (state.about || "her") : "words"
   const entry = {
@@ -1281,7 +1287,7 @@ async function saveCompose() {
     state.tab = who === "her" ? "her" : "us"
     state.about = who === "her" ? "her" : "us"
     render()
-    if (saved && (type === "photo" || type === "video")) openEntrySheet(saved.id)
+    if (saved && (type === "photo" || type === "video" || type === "letter")) openEntrySheet(saved.id)
   } catch (error) {
     alert(error.message || "保存失败")
     if (btn) {
