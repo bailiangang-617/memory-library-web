@@ -34,6 +34,7 @@ let dbPromise = null
 let memoryOnly = false
 const memoryDb = { entries: [] }
 const urlCache = new Map()
+let crop = null
 
 function $(id) {
   return document.getElementById(id)
@@ -232,6 +233,215 @@ function applyBackdrop() {
   document.body.classList.toggle("has-backdrop", !!url)
   if (layer) layer.classList.toggle("hidden", !url)
   if (img) img.src = url || ""
+}
+
+function backdropFrame() {
+  const width = Math.max(window.innerWidth || 360, 280)
+  const height = Math.min(window.innerHeight * 0.58, 560)
+  return { width, height, ratio: width / Math.max(height, 1) }
+}
+
+function cropOpen() {
+  return !!(crop && !$("cropper")?.classList.contains("hidden"))
+}
+
+async function fileToObjectUrl(file) {
+  if (file.blob) return { url: URL.createObjectURL(file.blob), revoke: true, name: file.name, mime: file.mime || "image/jpeg" }
+  const remote = fileUrl(file)
+  if (!remote) throw new Error("这张照片打不开")
+  try {
+    const res = await fetch(remote)
+    if (!res.ok) throw new Error("读不到这张照片")
+    const blob = await res.blob()
+    return { url: URL.createObjectURL(blob), revoke: true, name: file.name, mime: file.mime || blob.type || "image/jpeg" }
+  } catch (error) {
+    return { url: remote, revoke: false, name: file.name, mime: file.mime || "image/jpeg" }
+  }
+}
+
+async function openBackdropCrop(file) {
+  const image = file && file.mime && file.mime.startsWith("image/") ? file : null
+  if (!image) return alert("请先选一张照片")
+  const source = await fileToObjectUrl(image)
+  const layer = $("cropper")
+  if (!layer) return
+  closeCropper()
+  const frame = backdropFrame()
+  crop = {
+    url: source.url,
+    revoke: source.revoke,
+    name: source.name || "backdrop.jpg",
+    mime: source.mime,
+    nw: 0,
+    nh: 0,
+    dw: 0,
+    dh: 0,
+    ox: 0,
+    oy: 0,
+    winX: 0,
+    winY: 0,
+    winW: 0,
+    winH: 0,
+    zoom: 1,
+    ratio: frame.ratio,
+    drag: null,
+    pinch: null
+  }
+  document.body.classList.add("has-cropper")
+  layer.classList.remove("hidden")
+  layer.innerHTML = `
+    <div class="cropper-card">
+      <p class="kicker">裁进封面</p>
+      <h2>选能看见的这一条</h2>
+      <p class="crop-size" id="crop-size"></p>
+      <p class="muted">封面背景只会留下屏幕上方一条横幅。亮着的金框就是现在这台设备上实际能看见的范围，框外会被裁掉。可拖动金框，也可把框收小，再对准想留下的地方。</p>
+      <div class="crop-board" id="crop-board">
+        <img id="crop-full" alt="" />
+        <div class="crop-frame" id="crop-frame"></div>
+      </div>
+      <label class="crop-zoom">
+        <span>框里看得更近</span>
+        <input id="crop-zoom" type="range" min="1" max="2.6" step="0.01" value="1" />
+      </label>
+      <div class="crop-live">
+        <span>封面上会是这样</span>
+        <div class="crop-live-bar" id="crop-live"><img id="crop-live-img" alt="" /></div>
+      </div>
+      <div class="row-btns">
+        <button class="btn plain" data-act="crop-cancel" type="button">取消</button>
+        <button class="btn primary" data-act="crop-ok" type="button">用这一条</button>
+      </div>
+    </div>
+  `
+  const img = $("crop-full")
+  const live = $("crop-live-img")
+  img.onload = () => {
+    crop.nw = img.naturalWidth
+    crop.nh = img.naturalHeight
+    layoutCrop(true)
+  }
+  img.onerror = () => alert("这张照片打不开")
+  img.src = crop.url
+  if (live) live.src = crop.url
+}
+
+function closeCropper() {
+  const layer = $("cropper")
+  if (crop?.revoke && crop.url) URL.revokeObjectURL(crop.url)
+  crop = null
+  document.body.classList.remove("has-cropper")
+  if (layer) {
+    layer.classList.add("hidden")
+    layer.innerHTML = ""
+  }
+}
+
+function clampCrop() {
+  if (!crop) return
+  crop.winX = Math.min(Math.max(0, crop.winX), Math.max(0, crop.dw - crop.winW))
+  crop.winY = Math.min(Math.max(0, crop.winY), Math.max(0, crop.dh - crop.winH))
+}
+
+function layoutCrop(reset) {
+  if (!crop || !crop.nw) return
+  const board = $("crop-board")
+  const img = $("crop-full")
+  const frame = $("crop-frame")
+  const size = $("crop-size")
+  if (!board || !img || !frame) return
+  crop.ratio = backdropFrame().ratio
+  const fit = Math.min(board.clientWidth / crop.nw, board.clientHeight / crop.nh)
+  crop.dw = crop.nw * fit
+  crop.dh = crop.nh * fit
+  crop.ox = (board.clientWidth - crop.dw) / 2
+  crop.oy = (board.clientHeight - crop.dh) / 2
+  const maxW = crop.dw / crop.dh >= crop.ratio ? crop.dh * crop.ratio : crop.dw
+  const maxH = maxW / crop.ratio
+  crop.winW = maxW / crop.zoom
+  crop.winH = maxH / crop.zoom
+  if (reset) {
+    crop.winX = (crop.dw - crop.winW) / 2
+    crop.winY = Math.max(0, (crop.dh - crop.winH) * 0.28)
+  }
+  clampCrop()
+  img.style.width = `${crop.dw}px`
+  img.style.height = `${crop.dh}px`
+  img.style.left = `${crop.ox}px`
+  img.style.top = `${crop.oy}px`
+  frame.style.width = `${crop.winW}px`
+  frame.style.height = `${crop.winH}px`
+  frame.style.left = `${crop.ox + crop.winX}px`
+  frame.style.top = `${crop.oy + crop.winY}px`
+  const live = backdropFrame()
+  if (size) size.textContent = `现在这台设备上，封面能看见的大约是 ${Math.round(live.width)} × ${Math.round(live.height)} 的一条横幅。`
+  layoutCropLive()
+}
+
+function layoutCropLive() {
+  const bar = $("crop-live")
+  const img = $("crop-live-img")
+  if (!crop || !bar || !img || !crop.dw) return
+  const scale = bar.clientWidth / crop.winW
+  img.style.width = `${crop.dw * scale}px`
+  img.style.height = `${crop.dh * scale}px`
+  img.style.left = `${-crop.winX * scale}px`
+  img.style.top = `${-crop.winY * scale}px`
+}
+
+function moveCropBy(dx, dy) {
+  if (!crop) return
+  crop.winX += dx
+  crop.winY += dy
+  clampCrop()
+  layoutCrop(false)
+}
+
+function setCropZoom(zoom, aroundX, aroundY) {
+  if (!crop) return
+  const next = Math.min(2.6, Math.max(1, zoom))
+  const cx = aroundX == null ? crop.winX + crop.winW / 2 : aroundX
+  const cy = aroundY == null ? crop.winY + crop.winH / 2 : aroundY
+  const px = (cx - crop.winX) / crop.winW
+  const py = (cy - crop.winY) / crop.winH
+  crop.zoom = next
+  const maxW = crop.dw / crop.dh >= crop.ratio ? crop.dh * crop.ratio : crop.dw
+  crop.winW = maxW / crop.zoom
+  crop.winH = crop.winW / crop.ratio
+  crop.winX = cx - crop.winW * px
+  crop.winY = cy - crop.winH * py
+  clampCrop()
+  layoutCrop(false)
+}
+
+async function confirmCrop() {
+  if (!crop) return
+  const img = $("crop-full")
+  if (!img || !crop.nw) throw new Error("照片还没准备好")
+  const sx = crop.winX / crop.dw * crop.nw
+  const sy = crop.winY / crop.dh * crop.nh
+  const sw = crop.winW / crop.dw * crop.nw
+  const sh = crop.winH / crop.dh * crop.nh
+  const outW = Math.min(2000, Math.max(640, Math.round(sw)))
+  const outH = Math.max(1, Math.round(outW / crop.ratio))
+  const canvas = document.createElement("canvas")
+  canvas.width = outW
+  canvas.height = outH
+  const ctx = canvas.getContext("2d")
+  try {
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH)
+  } catch (error) {
+    throw new Error("这张云端照片没法在这里裁，请到写下里重新选一次文件。")
+  }
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92))
+  if (!blob) throw new Error("裁剪失败")
+  await saveBackdrop([{
+    id: uid("f"),
+    name: "backdrop.jpg",
+    mime: "image/jpeg",
+    blob
+  }])
+  closeCropper()
+  render()
 }
 
 async function saveBackdrop(files) {
@@ -832,7 +1042,7 @@ function renderAdd() {
       <button class="btn primary" id="f-save" type="button">放进${state.about === "her" ? "她的册子" : "我们的册子"}</button>
     </section>
     <section class="card form">
-      <p class="muted">册子上方的底，可以嵌进一张照片，并和下方纸色慢慢融合。</p>
+      <p class="muted">封面背景是屏幕上方一条横幅。选好照片后，会标出这台设备上实际能看见的范围，你再拖框裁好。</p>
       ${backdropUrl() ? `<img class="backdrop-pick" src="${backdropUrl()}" alt="" />` : ""}
       <div class="row-btns">
         <label class="btn ghost file-btn">换封面背景<input id="f-backdrop" type="file" accept="image/*" /></label>
@@ -1110,7 +1320,8 @@ function bindEvents() {
   $("sheet")?.addEventListener("click", onSheetClick)
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
-      if (state.peek >= 0) closePeek()
+      if (cropOpen()) closeCropper()
+      else if (state.peek >= 0) closePeek()
       else closeSheet()
       return
     }
@@ -1132,7 +1343,77 @@ function bindEvents() {
     queueLinger(true)
   })
   window.addEventListener("scroll", () => queueLinger(false), { passive: true })
-  window.addEventListener("resize", () => queueLinger(true))
+  window.addEventListener("resize", () => {
+    queueLinger(true)
+    if (cropOpen()) layoutCrop(false)
+  })
+  const cropper = $("cropper")
+  if (cropper) {
+    cropper.addEventListener("click", async (event) => {
+      const act = event.target.closest("[data-act]")
+      if (!act) return
+      if (act.dataset.act === "crop-cancel") {
+        closeCropper()
+        return
+      }
+      if (act.dataset.act === "crop-ok") {
+        act.disabled = true
+        act.textContent = "正在放上…"
+        try {
+          await confirmCrop()
+        } catch (error) {
+          alert(error.message || "换成背景失败")
+          act.disabled = false
+          act.textContent = "用这一条"
+        }
+      }
+    })
+    cropper.addEventListener("input", (event) => {
+      if (event.target.id === "crop-zoom" && crop) setCropZoom(Number(event.target.value))
+    })
+    cropper.addEventListener("pointerdown", (event) => {
+      if (!crop || !event.target.closest("#crop-board")) return
+      event.preventDefault()
+      const board = $("crop-board")
+      if (board?.setPointerCapture) board.setPointerCapture(event.pointerId)
+      if (!crop.pointers) crop.pointers = new Map()
+      crop.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+      if (crop.pointers.size === 2) {
+        const pts = Array.from(crop.pointers.values())
+        crop.pinch = {
+          dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+          zoom: crop.zoom
+        }
+        crop.drag = null
+      } else {
+        crop.drag = { x: event.clientX, y: event.clientY }
+        crop.pinch = null
+      }
+    })
+    cropper.addEventListener("pointermove", (event) => {
+      if (!crop?.pointers?.has(event.pointerId)) return
+      crop.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+      if (crop.pointers.size === 2 && crop.pinch) {
+        const pts = Array.from(crop.pointers.values())
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y)
+        if (crop.pinch.dist) setCropZoom(crop.pinch.zoom * (dist / crop.pinch.dist))
+        const slider = $("crop-zoom")
+        if (slider) slider.value = String(crop.zoom)
+        return
+      }
+      if (!crop.drag) return
+      moveCropBy(event.clientX - crop.drag.x, event.clientY - crop.drag.y)
+      crop.drag = { x: event.clientX, y: event.clientY }
+    })
+    const endCropPointer = (event) => {
+      if (!crop?.pointers) return
+      crop.pointers.delete(event.pointerId)
+      if (crop.pointers.size < 2) crop.pinch = null
+      if (!crop.pointers.size) crop.drag = null
+    }
+    cropper.addEventListener("pointerup", endCropPointer)
+    cropper.addEventListener("pointercancel", endCropPointer)
+  }
 }
 
 function unlock() {
@@ -1238,10 +1519,9 @@ async function onMainClick(event) {
     const file = tile && tile.file && tile.file.mime.startsWith("image/") ? tile.file : null
     if (!file) return alert("这一页不是照片")
     try {
-      await saveBackdrop([file])
-      render()
+      await openBackdropCrop(file)
     } catch (error) {
-      alert(error.message || "换成背景失败")
+      alert(error.message || "打不开这张照片")
     }
     return
   }
@@ -1325,10 +1605,11 @@ async function onMainChange(event) {
   if (input.id === "f-backdrop" && input.files?.[0]) {
     try {
       const files = await filesFromInput(input.files)
-      await saveBackdrop(files)
-      render()
+      input.value = ""
+      await openBackdropCrop(files[0])
     } catch (error) {
-      alert(error.message || "换成背景失败")
+      input.value = ""
+      alert(error.message || "打不开这张照片")
     }
     return
   }
