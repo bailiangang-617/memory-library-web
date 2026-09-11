@@ -692,10 +692,10 @@ function render() {
   if (state.tab === "add") stashForm()
   applyBackdrop()
   const titles = {
-    door: ["贺紫钦", "与你的日子"],
-    her: ["紫钦", "看她"],
-    us: ["我们", "与你的日子"],
-    add: ["写下", "先选这是紫钦，还是我们"]
+    door: ["贺紫钦", "二月十七，往后都是"],
+    her: ["紫钦", "灯下的样子"],
+    us: ["我们", "从那一顿火锅说起"],
+    add: ["写下", "把那天再放进来"]
   }
   if (!canWrite() && state.tab === "add") state.tab = "door"
   $("app")?.classList.toggle("is-book", state.tab !== "add")
@@ -730,15 +730,15 @@ function renderDoor() {
   $("main").innerHTML = `
     <section class="cover">
       <div class="cover-title">
-        <p class="cover-mark">给她的两本册子</p>
+        <p class="cover-mark">写给贺紫钦</p>
         <h2 class="cover-name">贺紫钦</h2>
         <div class="flourish" aria-hidden="true"><span></span></div>
-        <p class="cover-line">把日子轻轻叠好</p>
+        <p class="cover-line">火锅的热气还在，花已经开过一季</p>
       </div>
     </section>
     <div class="doors">
-      ${doorHtml("her", "看她", "她的样子")}
-      ${doorHtml("us", "看我们", "一起走过的日子")}
+      ${doorHtml("her", "看她", "灯下的样子")}
+      ${doorHtml("us", "看我们", "年里四面，其后千里")}
     </div>
     ${canWrite() && state.entries.some(isTrial) ? `<p class="sub" style="text-align:center;margin-top:22px"><button class="link" data-act="clear-demo" type="button">清掉试片</button></p>` : ""}
   `
@@ -897,14 +897,17 @@ function renderTale() {
         <p class="cover-mark">${her ? "先看她" : "先看我们"}</p>
         <h2 class="cover-name">${her ? "紫钦" : "我们"}</h2>
         <div class="flourish" aria-hidden="true"><span></span></div>
-        <p class="cover-line">${her ? "先把她最近的样子，慢慢看一遍。" : "先把最近走过的日子，轻轻过一遍。"}</p>
+        <p class="cover-line">${her ? "二月十七以后，她的样子便常常回来。" : "火锅起，年里四面，隔水说话。"}</p>
+        <p class="tale-guide">${her
+          ? "先看最近的几页。灯下的侧脸，广州的风，后来又见的几次。看完，整面墙交给你。"
+          : "四月十九，人到广州，花递过去，话也落了地。先把最近走过的慢慢看一遍，再让日子自己往前流。"}</p>
         <div class="tale-actions">
-          <button class="btn ghost" data-act="tale-go" type="button">往下看</button>
-          <button class="link quiet" data-act="skip-tale" type="button">自己看</button>
+          <button class="btn ghost" data-act="tale-go" type="button">往下翻</button>
+          <button class="link quiet" data-act="skip-tale" type="button">自己翻</button>
         </div>
       </section>
     `
-    scheduleTale(3200, taleGo)
+    scheduleTale(5600, taleGo)
     return
   }
   const scene = tale.scenes[tale.index]
@@ -923,7 +926,7 @@ function renderTale() {
           ${scene.body ? `<p>${escapeHtml(scene.body)}</p>` : ""}
         </div>
         <div class="tale-dots">${tale.scenes.map((_, i) => `<i class="${i === tale.index ? "on" : ""}"></i>`).join("")}</div>
-        <button class="link quiet tale-skip" data-act="skip-tale" type="button">自己看</button>
+        <button class="link quiet tale-skip" data-act="skip-tale" type="button">自己翻</button>
       </div>
     </section>
   `
@@ -946,9 +949,9 @@ function renderHer() {
   $("main").innerHTML = `
     <section class="book-head">
       <button class="cover-name" data-tab="door" type="button">紫钦</button>
-      ${cards.length ? `<button class="link quiet" data-act="replay-tale" type="button">再讲一遍</button>` : ""}
+      ${cards.length ? `<button class="link quiet" data-act="replay-tale" type="button">从头看</button>` : ""}
     </section>
-    ${cards.length ? wallHtml(cards, polaroidHtml) : `<div class="empty"><p>她的样子，还在来的路上。</p></div>`}
+    ${cards.length ? wallHtml(cards, polaroidHtml) : `<div class="empty"><p>她的样子，还等你放进来。</p></div>`}
   `
   bindWalls()
 }
@@ -1269,9 +1272,9 @@ function renderUs() {
   $("main").innerHTML = `
     <section class="book-head">
       <button class="cover-name" data-tab="door" type="button">我们</button>
-      ${days.length ? `<button class="link quiet" data-act="replay-tale" type="button">再讲一遍</button>` : ""}
+      ${days.length ? `<button class="link quiet" data-act="replay-tale" type="button">从头看</button>` : ""}
     </section>
-    ${days.length ? wallHtml(days, capsuleHtml) : `<div class="empty"><p>那些日子，还在来的路上。</p></div>`}
+    ${days.length ? wallHtml(days, capsuleHtml) : `<div class="empty"><p>从那顿火锅写起，也好。</p></div>`}
   `
   bindWalls()
 }
@@ -1293,7 +1296,7 @@ function renderAdd() {
     <section class="card form">
       <input id="f-title" class="input" placeholder="${titlePlaceholder(type)}" value="${escapeHtml(state.draftTitle || "")}" />
       <input id="f-when" class="input" type="datetime-local" value="${escapeHtml(state.draftWhen || toDatetimeLocal(Date.now()))}" />
-      <textarea id="f-body" placeholder="${type === "photo" ? "写给这一组的话，点开墙会显示在右边。" : "想在信旁边写一句也可以。"}">${escapeHtml(state.draftBody || "")}</textarea>
+      <textarea id="f-body" placeholder="${type === "photo" ? "写给她看的话，点开会在照片旁边。" : "想在信边再留一句。"}">${escapeHtml(state.draftBody || "")}</textarea>
       ${type === "photo" ? `<label class="btn ghost file-btn">${state.draftFiles.length ? "再放入照片或视频" : "放入照片或视频"}<input id="f-files" type="file" accept="image/*,video/*" multiple /></label>` : ""}
       ${type === "letter" ? `
         <div class="row-btns">
@@ -1316,9 +1319,9 @@ function renderAdd() {
 }
 
 function titlePlaceholder(type) {
-  if (type === "photo") return "这一组，想叫它什么"
-  if (type === "letter") return "这封信，想叫它什么"
-  return "这一组，想叫它什么"
+  if (type === "photo") return "想叫这一天什么"
+  if (type === "letter") return "这一封，想叫它什么"
+  return "想叫这一天什么"
 }
 
 function renderMine() {
