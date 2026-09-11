@@ -378,6 +378,14 @@ body.is-view .tabbar { display: none; }
 .compose-types { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
 .file-btn { position: relative; overflow: hidden; }
 .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.sr-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
 .draft-row {
   display: flex;
   flex-wrap: wrap;

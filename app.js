@@ -253,7 +253,7 @@ function bgmEntry() {
 }
 
 function defaultBgmUrl() {
-  return "./bgm-zi.mp3?v=20260911au"
+  return "./bgm-zi.mp3?v=20260911av"
 }
 
 function bgmUrl() {
@@ -542,9 +542,9 @@ async function clearBackdrop() {
 }
 
 function isOwnMp3(file) {
-  const mime = String(file.mime || file.type || "")
+  const mime = String(file.mime || file.type || "").toLowerCase()
   const name = String(file.name || "")
-  return mime === "audio/mpeg" || mime === "audio/mp3" || /\.mp3$/i.test(name)
+  return mime === "audio/mpeg" || mime === "audio/mp3" || mime === "audio/x-mpeg" || mime.startsWith("audio/") || mime === "application/octet-stream" || /\.(mp3|m4a|aac)$/i.test(name)
 }
 
 async function saveBgm(files) {
@@ -1447,10 +1447,12 @@ function renderAdd() {
       </div>
     </section>
     <section class="card form">
-      <p class="muted">背景音乐只放你自己录的、或你有权使用的 MP3。网易云下载的歌有版权，不能放到这本册子里。</p>
+      <p class="muted">先把 MP3 存到手机「文件」或「下载」，再点下面按钮。弹出窗口里请选「文件」「下载内容」，不要选「音乐」。夸克网盘里的歌要先下载到手机，网盘里直接选往往选不到。</p>
       ${bgmEntry() ? `<p class="muted">现在用的是：${escapeHtml(bgmEntry().files?.[0]?.name || "你的音乐")}</p>` : `<p class="muted">现在用的是开放授权的 Love Theme。</p>`}
+      <p id="bgm-status" class="muted hidden"></p>
       <div class="row-btns">
-        <label class="btn ghost file-btn">换背景音乐<input id="f-bgm" type="file" accept="audio/mpeg,.mp3" /></label>
+        <button class="btn ghost" data-act="pick-bgm" type="button">换背景音乐</button>
+        <input id="f-bgm" class="sr-file" type="file" accept=".mp3,.m4a,audio/*,*/*" />
         ${bgmEntry() ? `<button class="btn plain" data-act="clear-bgm" type="button">还原默认音乐</button>` : ""}
       </div>
     </section>
@@ -2029,6 +2031,18 @@ async function onMainClick(event) {
     }
     return
   }
+  if (act.dataset.act === "pick-bgm") {
+    const input = $("f-bgm")
+    if (!input) return
+    const status = $("bgm-status")
+    if (status) {
+      status.classList.remove("hidden")
+      status.textContent = "请在弹出的窗口里选文件。若只看到音乐库是空的，改选「文件」或「下载」。"
+    }
+    input.value = ""
+    input.click()
+    return
+  }
   if (act.dataset.act === "clear-bgm") {
     try {
       await clearBgm()
@@ -2107,15 +2121,32 @@ async function onMainChange(event) {
     return
   }
   if (input.id === "f-bgm" && input.files?.[0]) {
-    if (!canWrite()) return
+    if (!canWrite()) return alert("这本册子现在只能看，换音乐请用可写口令进去")
+    const status = $("bgm-status")
+    const pick = document.querySelector("[data-act='pick-bgm']")
     try {
       const files = await filesFromInput(input.files)
-      input.value = ""
-      if (!isOwnMp3(files[0])) return alert("请放入 MP3 文件")
+      if (!isOwnMp3(files[0])) return alert("请选 MP3 文件。若在夸克网盘里，请先下载到手机后再选。")
+      if (status) {
+        status.classList.remove("hidden")
+        status.textContent = `正在上传 ${files[0].name}…`
+      }
+      if (pick) {
+        pick.disabled = true
+        pick.textContent = "正在上传…"
+      }
       await saveBgm(files)
       render()
     } catch (error) {
       input.value = ""
+      if (pick) {
+        pick.disabled = false
+        pick.textContent = "换背景音乐"
+      }
+      if (status) {
+        status.classList.remove("hidden")
+        status.textContent = error.message || "背景音乐上传失败"
+      }
       alert(error.message || "背景音乐上传失败")
     }
     return
