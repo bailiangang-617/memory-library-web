@@ -4,28 +4,42 @@ const Cloud = {
     return !!(cfg.enabled && cfg.functionUrl)
   },
 
+  key() {
+    const stored = sessionStorage.getItem("om_key")
+    if (stored === "hzq" || stored === "heziqing") return stored
+    return "heziqing"
+  },
+
   async call(action, payload) {
-    let res
-    try {
-      res = await fetch(window.CLOUD.functionUrl, {
+    const send = async (key) => {
+      const res = await fetch(window.CLOUD.functionUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Moments-Key": "heziqing"
+          "X-Moments-Key": key
         },
-        body: JSON.stringify({ action, key: "heziqing", ...payload })
+        body: JSON.stringify({ action, key, ...payload })
       })
+      const text = await res.text()
+      let data = {}
+      try {
+        data = text ? JSON.parse(text) : {}
+      } catch (error) {
+        data = { error: text }
+      }
+      if (data.result && typeof data.result === "object") data = data.result
+      return { res, data }
+    }
+    let pack
+    try {
+      pack = await send(this.key())
+      if (this.key() === "hzq" && action === "list" && (!pack.res.ok || pack.data.ok === false)) {
+        pack = await send("heziqing")
+      }
     } catch (error) {
       throw new Error("连不上云端，请换浏览器重试")
     }
-    const text = await res.text()
-    let data = {}
-    try {
-      data = text ? JSON.parse(text) : {}
-    } catch (error) {
-      data = { error: text }
-    }
-    if (data.result && typeof data.result === "object") data = data.result
+    const { res, data } = pack
     if (!res.ok || data.ok === false) {
       throw new Error(data.error || `云端请求失败 ${res.status}`)
     }

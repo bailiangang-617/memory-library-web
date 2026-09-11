@@ -1,4 +1,7 @@
-const ACCESS_CODE = "heziqing"
+const ACCESS = {
+  heziqing: "edit",
+  hzq: "view"
+}
 const DB_NAME = "our-moments-v1"
 
 const KINDS = [
@@ -39,6 +42,27 @@ let crop = null
 
 function $(id) {
   return document.getElementById(id)
+}
+
+function canWrite() {
+  return sessionStorage.getItem("om_role") !== "view"
+}
+
+function rememberGate(code) {
+  const role = ACCESS[code]
+  sessionStorage.setItem("om_ok", code)
+  sessionStorage.setItem("om_key", code)
+  sessionStorage.setItem("om_role", role)
+}
+
+function gateOpen() {
+  const code = sessionStorage.getItem("om_ok")
+  if (code === "heziqing" || code === "hzq") return true
+  if (code === "1") {
+    rememberGate("heziqing")
+    return true
+  }
+  return false
 }
 
 function uid(prefix) {
@@ -88,6 +112,7 @@ function getAll() {
 }
 
 async function persistEntry(entry) {
+  if (!canWrite()) throw new Error("这本册子只能看")
   const packed = withWho(entry)
   if (Cloud.on()) return fromStored(await Cloud.save(packed))
   await putEntry(packed)
@@ -670,8 +695,10 @@ function render() {
     us: ["我们", "与你的日子"],
     add: ["写下", "先选这是紫钦，还是我们"]
   }
+  if (!canWrite() && state.tab === "add") state.tab = "door"
   $("app")?.classList.toggle("is-book", state.tab !== "add")
   $("app")?.classList.toggle("is-remember", state.tab === "her" || state.tab === "us")
+  document.body.classList.toggle("is-view", !canWrite())
   document.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("on", btn.dataset.tab === state.tab))
   $("page-title").textContent = titles[state.tab][0]
   $("page-sub").textContent = titles[state.tab][1]
@@ -706,7 +733,7 @@ function renderDoor() {
       ${doorHtml("her", "看她", "她的样子")}
       ${doorHtml("us", "看我们", "一起走过的日子")}
     </div>
-    ${state.entries.some(isTrial) ? `<p class="sub" style="text-align:center;margin-top:22px"><button class="link" data-act="clear-demo" type="button">清掉试片</button></p>` : ""}
+    ${canWrite() && state.entries.some(isTrial) ? `<p class="sub" style="text-align:center;margin-top:22px"><button class="link" data-act="clear-demo" type="button">清掉试片</button></p>` : ""}
   `
 }
 
@@ -1029,15 +1056,15 @@ function openSheet({ title, date, gallery, entries, deleteId }) {
           ${title ? `<h2>${escapeHtml(title)}</h2>` : ""}
         </div>
         <div class="sheet-tools">
-          <button class="link quiet" data-act="toggle-more" type="button">···</button>
+          ${canWrite() ? `<button class="link quiet" data-act="toggle-more" type="button">···</button>` : ""}
           <button class="link quiet" data-act="close-sheet" type="button">合上</button>
         </div>
       </div>
-      <div class="sheet-more hidden" id="sheet-more">
+      ${canWrite() ? `<div class="sheet-more hidden" id="sheet-more">
         <button class="link" data-act="edit-words" type="button">改几个字</button>
         <button class="link" data-act="use-backdrop" type="button">用作背景</button>
         ${deleteId ? `<button class="link danger-link" data-act="delete" data-id="${deleteId}" type="button">删去这一页</button>` : ""}
-      </div>
+      </div>` : ""}
       <div class="sheet-split">
         <aside class="sheet-photos" id="sheet-photos">${albumStageHtml()}</aside>
         <article class="sheet-words">
@@ -1384,6 +1411,7 @@ function queueLinger(immediate) {
 }
 
 function bindEvents() {
+  if ($("bgm-btn")) $("bgm-btn").addEventListener("click", toggleBgm)
   if ($("gate-btn")) $("gate-btn").addEventListener("click", unlock)
   if ($("gate-input")) {
     $("gate-input").addEventListener("keydown", (event) => {
@@ -1495,14 +1523,50 @@ function bindEvents() {
   }
 }
 
+function startBgm() {
+  const audio = $("bgm")
+  const btn = $("bgm-btn")
+  if (!audio || !btn) return
+  btn.classList.remove("hidden")
+  audio.volume = 0.32
+  const muted = sessionStorage.getItem("om_bgm") === "off"
+  if (muted) {
+    audio.pause()
+    btn.classList.add("off")
+    return
+  }
+  const play = audio.play()
+  if (play && play.catch) {
+    play.catch(() => btn.classList.add("off"))
+  }
+  btn.classList.toggle("off", audio.paused)
+}
+
+function toggleBgm() {
+  const audio = $("bgm")
+  const btn = $("bgm-btn")
+  if (!audio || !btn) return
+  if (audio.paused) {
+    sessionStorage.setItem("om_bgm", "on")
+    audio.play().catch(() => {})
+    btn.classList.remove("off")
+    return
+  }
+  sessionStorage.setItem("om_bgm", "off")
+  audio.pause()
+  btn.classList.add("off")
+}
+
 function unlock() {
-  if ($("gate-input").value.trim() !== ACCESS_CODE) {
+  const code = $("gate-input").value.trim()
+  if (!ACCESS[code]) {
     $("gate-error").classList.remove("hidden")
     return
   }
-  sessionStorage.setItem("om_ok", "1")
+  rememberGate(code)
   $("gate").classList.add("hidden")
   $("app").classList.remove("hidden")
+  startBgm()
 }
 
 function onSheetClick(event) {
@@ -1555,6 +1619,7 @@ function onSheetClick(event) {
 }
 
 function switchTab(tab) {
+  if (tab === "add" && !canWrite()) return
   closeSheet()
   if (tab !== "add") clearDraft()
   state.tab = tab
@@ -1609,9 +1674,10 @@ async function onMainClick(event) {
     openEntrySheet(open.dataset.open)
     return
   }
-  if (event.target.id === "f-save") return saveCompose()
+  if (event.target.id === "f-save") return canWrite() ? saveCompose() : null
   const act = event.target.closest("[data-act]")
   if (!act) return
+  if (!canWrite() && ["edit-words", "use-backdrop", "clear-backdrop", "delete", "clear-demo", "clear", "save-edit"].includes(act.dataset.act)) return
   if (act.dataset.act === "back" || act.dataset.act === "close-sheet") {
     closeSheet()
     return
@@ -1705,6 +1771,7 @@ async function onMainChange(event) {
     return
   }
   if (input.id === "f-backdrop" && input.files?.[0]) {
+    if (!canWrite()) return
     try {
       const files = await filesFromInput(input.files)
       input.value = ""
@@ -1769,7 +1836,7 @@ async function saveCompose() {
 }
 
 async function runSelfTest() {
-  sessionStorage.setItem("om_ok", "1")
+  rememberGate("heziqing")
   $("gate")?.classList.add("hidden")
   $("app")?.classList.remove("hidden")
   await putEntry({
@@ -1919,9 +1986,10 @@ async function boot() {
     }
     return
   }
-  if (sessionStorage.getItem("om_ok") === "1") {
+  if (gateOpen()) {
     $("gate").classList.add("hidden")
     $("app").classList.remove("hidden")
+    startBgm()
   }
   render()
 }

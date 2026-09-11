@@ -329,6 +329,23 @@ textarea { min-height: 88px; resize: vertical; }
 .app.is-book .tab { color: rgba(138, 122, 150, 0.62); font-weight: 400; }
 .tab.on { color: var(--accent); font-weight: 600; }
 .app.is-book .tab.on { color: var(--accent); }
+body.is-view [data-tab="add"] { display: none; }
+.bgm-btn {
+  position: fixed;
+  left: 14px;
+  bottom: calc(58px + env(safe-area-inset-bottom));
+  z-index: 22;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(255, 250, 253, 0.86);
+  color: var(--gold);
+  font-size: 16px;
+  box-shadow: 0 8px 18px rgba(86, 58, 102, 0.08);
+}
+.bgm-btn.off { opacity: 0.4; }
 
 .media-frame {
   margin-top: 14px;
