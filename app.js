@@ -253,7 +253,7 @@ function bgmEntry() {
 }
 
 function defaultBgmUrl() {
-  return "./bgm-zi.mp3?v=20260911aw"
+  return "./bgm-zi.mp3?v=20260911ax"
 }
 
 function bgmUrl() {
@@ -1055,13 +1055,57 @@ function typeText(el, text, done) {
   step()
 }
 
+const INTRO_LETTERS = [
+  {
+    first: "其实很爱",
+    second: "从你把第一张照片递过来的那一日起，花开过，信写过，上海的风也吹过你的衣角。紫色戴在你手上，墙纸还是你。有过退票，有过沉默，分别的时候，还是说不完那句不舍。",
+    third: "你下厨的那天，日子忽然变得很轻。伴手礼你买得很开心，我却在旁边悄悄吃醋。先看这几页，再让整本册子自己往前流。"
+  },
+  {
+    first: "爱是慢慢叠起来的",
+    second: "不是一声惊雷。是你第一次把样子给我看，是花热着递到手里，是信上那一笔一画。后来你来上海，风从衣角里进来，我才知道，原来想见一个人，可以这样真。",
+    third: "紫色很衬你。墙纸也是你。把这些轻轻翻开，像又把你拥近一点。"
+  },
+  {
+    first: "我把心口留给你",
+    second: "表白那天的花还在。第一次走进你的地盘，晚上还是迷了路。后来有过退票，有过你把我按进沉默里。可我回头看，路上仍全是你。",
+    third: "分别的时候说不完不舍。先看几页我们走过的，剩下的爱，都在后面等你。"
+  },
+  {
+    first: "你一来，日子就亮了",
+    second: "手写信是一字一句的真心。表是我挑的紫色，总觉得戴在你腕上，整条街都会软下来。你在我身边的时候，连墙纸都想跟着你呼吸。",
+    third: "小九会撒娇，你会下厨。糖醋排骨还热着，我已经觉得，和你过的每一天都值得留下来。"
+  },
+  {
+    first: "想你的时候，花还在开",
+    second: "从第一束花，到官宣那张图，到你为远行准备的衣服。我看着你，像看着一场不肯结束的春天。吵过，也拉黑过，可爱情总在下一页把我领回来。",
+    third: "今晚先随机翻几页。不是全部，是又一次，把你放在心口最亮的地方。"
+  },
+  {
+    first: "原来爱情是这样的",
+    second: "给你系过鞋带，也偷偷拍过你。你买伴手礼买得很开心，我却在旁边酸着。不是小气，是舍不得你的目光分给别的东西太久。",
+    third: "请你慢慢看。这些页里，每一句都在说：贺紫钦，我很爱你。"
+  },
+  {
+    first: "千山万水，还是你",
+    second: "朋友轻轻一引，你便站到了眼前。年里见过，其后隔着山和水，话却夜夜能到。等你来上海的那一天，飞机延误了好久，我在下面等，心比风还急。",
+    third: "现在把随机抽到的几页交给你。看完，整面墙都是我们。"
+  }
+]
+
+function pickIntroLetter() {
+  const last = Number(sessionStorage.getItem("om_intro_n"))
+  let i = Math.floor(Math.random() * INTRO_LETTERS.length)
+  if (INTRO_LETTERS.length > 1 && i === last) i = (i + 1) % INTRO_LETTERS.length
+  sessionStorage.setItem("om_intro_n", String(i))
+  return INTRO_LETTERS[i]
+}
+
 function playIntroWords() {
   const line = $("tale-line")
   const guide = $("tale-guide")
   const last = $("tale-guide-b")
-  const first = "其实很爱"
-  const second = "从你把第一张照片递过来的那一日起，花开过，信写过，上海的风也吹过你的衣角。紫色戴在你手上，墙纸还是你。有过退票，有过沉默，分别的时候，还是说不完那句不舍。"
-  const third = "你下厨的那天，日子忽然变得很轻。伴手礼你买得很开心，我却在旁边悄悄吃醋。先看最近走过的几页，再让整本册子自己往前流。"
+  const { first, second, third } = pickIntroLetter()
   if (prefersQuietMotion()) {
     if (line) line.textContent = first
     if (guide) guide.textContent = second
