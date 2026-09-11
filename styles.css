@@ -525,21 +525,27 @@ body.is-view [data-tab="add"] { display: none; }
 
 .book-head {
   text-align: center;
-  padding: 6px 8px 0;
+  padding: 22px 8px 8px;
 }
 .book-head .link.quiet {
   display: block;
-  margin: 4px auto 0;
+  margin: 10px auto 0;
   font-size: 12px;
 }
 .book-head .cover-name {
-  margin: 0;
-  font-size: 18px;
-  letter-spacing: 0.36em;
-  color: var(--accent-2);
+  margin: 6px 0 0;
+  font-size: 26px;
+  letter-spacing: 0.28em;
+  color: var(--ink);
   background: none;
   border: 0;
-  padding: 4px 8px;
+  padding: 0;
+}
+.book-head .cover-line {
+  margin-top: 8px;
+  max-width: 22em;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .wall {
@@ -547,7 +553,7 @@ body.is-view [data-tab="add"] { display: none; }
   flex-direction: column;
   gap: 10px;
   overflow: hidden;
-  margin: 8px 0 0;
+  margin: 28px 0 0;
   padding: 10px 0 8px;
   mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);

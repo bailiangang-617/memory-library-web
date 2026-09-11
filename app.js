@@ -1009,7 +1009,10 @@ function renderHer() {
   const cards = herCards()
   $("main").innerHTML = `
     <section class="book-head">
-      <button class="cover-name" data-tab="door" type="button">紫钦</button>
+      <button class="cover-mark" data-tab="door" type="button">回到封面</button>
+      <h2 class="cover-name">紫钦</h2>
+      <div class="flourish slim" aria-hidden="true"><span></span></div>
+      <p class="cover-line">二月十七以后，她的样子便常常回来。</p>
       ${cards.length ? `<button class="link quiet" data-act="replay-tale" type="button">从头看</button>` : ""}
     </section>
     ${cards.length ? wallHtml(cards, polaroidHtml) : `<div class="empty"><p>她的样子，还等你放进来。</p></div>`}
@@ -1332,7 +1335,10 @@ function renderUs() {
   const days = usYearGroups(bookEntries("us")).flatMap((block) => block.seasons.flatMap((season) => season.days))
   $("main").innerHTML = `
     <section class="book-head">
-      <button class="cover-name" data-tab="door" type="button">我们</button>
+      <button class="cover-mark" data-tab="door" type="button">回到封面</button>
+      <h2 class="cover-name">我们</h2>
+      <div class="flourish slim" aria-hidden="true"><span></span></div>
+      <p class="cover-line">一场巧遇起，年里四面，隔水说话。</p>
       ${days.length ? `<button class="link quiet" data-act="replay-tale" type="button">从头看</button>` : ""}
     </section>
     ${days.length ? wallHtml(days, capsuleHtml) : `<div class="empty"><p>从初见那一日写起，也好。</p></div>`}
