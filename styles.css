@@ -51,6 +51,11 @@ body {
     linear-gradient(180deg, rgba(243, 238, 246, 0.16) 0%, rgba(243, 238, 246, 0.38) 46%, var(--bg) 90%, var(--bg) 100%),
     linear-gradient(90deg, rgba(243, 238, 246, 0.32), transparent 20%, transparent 80%, rgba(243, 238, 246, 0.32));
 }
+body.has-backdrop .backdrop::after {
+  background:
+    linear-gradient(180deg, rgba(243, 238, 246, 0.82) 0%, rgba(243, 238, 246, 0.5) 26%, rgba(243, 238, 246, 0.16) 52%, var(--bg) 92%),
+    linear-gradient(90deg, rgba(243, 238, 246, 0.42), transparent 16%, transparent 84%, rgba(243, 238, 246, 0.42));
+}
 body.has-backdrop {
   background-image: none;
 }
@@ -177,6 +182,30 @@ textarea { min-height: 88px; resize: vertical; }
   border-radius: 20px;
   background: radial-gradient(ellipse at 50% 40%, rgba(243, 238, 246, 0.72), rgba(243, 238, 246, 0.18) 70%, transparent 100%);
   animation: cover-rise 0.9s ease both;
+}
+body.has-backdrop .cover-title {
+  background: radial-gradient(ellipse at 50% 36%, rgba(255, 250, 253, 0.94), rgba(243, 238, 246, 0.7) 58%, rgba(243, 238, 246, 0.18) 100%);
+}
+body.has-backdrop .book-head {
+  background: linear-gradient(180deg, rgba(255, 250, 253, 0.9), rgba(255, 250, 253, 0.42) 72%, transparent);
+  border-radius: 0 0 24px 24px;
+}
+body.has-backdrop .cover-mark,
+body.has-backdrop .book-head .cover-mark,
+body.has-backdrop .tale-intro .cover-mark {
+  color: #4a3158;
+  text-shadow: 0 1px 0 rgba(255, 250, 253, 0.96), 0 0 16px rgba(255, 250, 253, 0.85);
+}
+body.has-backdrop .cover-name,
+body.has-backdrop .book-head .cover-name,
+body.has-backdrop .tale-intro .cover-name {
+  color: #2c2236;
+  text-shadow: 0 1px 0 rgba(255, 250, 253, 0.96), 0 0 18px rgba(255, 250, 253, 0.8);
+}
+body.has-backdrop .cover-line,
+body.has-backdrop .book-head .cover-line {
+  color: #53405f;
+  text-shadow: 0 1px 0 rgba(255, 250, 253, 0.94), 0 0 14px rgba(255, 250, 253, 0.75);
 }
 @keyframes cover-rise {
   from { opacity: 0; transform: translateY(10px); }
