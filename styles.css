@@ -47,8 +47,9 @@ body {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(243, 238, 246, 0.18) 0%, rgba(243, 238, 246, 0.42) 42%, var(--bg) 88%, var(--bg) 100%),
-    linear-gradient(90deg, rgba(243, 238, 246, 0.28), transparent 22%, transparent 78%, rgba(243, 238, 246, 0.28));
+    radial-gradient(ellipse at 50% 28%, transparent 28%, rgba(243, 238, 246, 0.22) 72%, var(--bg) 100%),
+    linear-gradient(180deg, rgba(243, 238, 246, 0.16) 0%, rgba(243, 238, 246, 0.38) 46%, var(--bg) 90%, var(--bg) 100%),
+    linear-gradient(90deg, rgba(243, 238, 246, 0.32), transparent 20%, transparent 80%, rgba(243, 238, 246, 0.32));
 }
 body.has-backdrop {
   background-image: none;
@@ -84,6 +85,11 @@ button { cursor: pointer; }
   border: 1px solid var(--gold);
   transform: rotate(45deg);
 }
+.flourish.slim {
+  margin: 4px 0 8px;
+}
+.flourish.slim::before,
+.flourish.slim::after { width: 28px; }
 
 .gate {
   min-height: 100vh;
@@ -155,7 +161,17 @@ textarea { min-height: 88px; resize: vertical; }
 
 .cover {
   text-align: center;
-  padding: 18px 8px 8px;
+  padding: 28px 8px 4px;
+}
+.cover-title {
+  padding: 18px 16px 16px;
+  border-radius: 20px;
+  background: radial-gradient(ellipse at 50% 40%, rgba(243, 238, 246, 0.72), rgba(243, 238, 246, 0.18) 70%, transparent 100%);
+  animation: cover-rise 0.9s ease both;
+}
+@keyframes cover-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
 }
 .cover-mark {
   margin: 0;
@@ -167,17 +183,17 @@ textarea { min-height: 88px; resize: vertical; }
   padding: 0;
 }
 .cover-name {
-  margin: 8px 0 0;
-  font-size: 32px;
+  margin: 10px 0 0;
+  font-size: 36px;
   font-weight: 500;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.34em;
   font-family: "Songti SC", "STSong", "Noto Serif SC", "SimSun", serif;
 }
 .cover-line {
   margin: 6px 0 0;
   color: var(--muted);
   font-size: 13px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.18em;
 }
 
 .links {
@@ -400,13 +416,17 @@ textarea { min-height: 88px; resize: vertical; }
 
 .doors {
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin-top: 28px;
+  margin-top: 26px;
 }
 .door {
-  display: block;
+  display: flex;
+  align-items: stretch;
   width: 100%;
-  padding: 22px 18px;
+  min-height: 118px;
+  padding: 0;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px 8px 20px 20px;
   background: var(--surface);
@@ -414,6 +434,25 @@ textarea { min-height: 88px; resize: vertical; }
   text-align: left;
   box-shadow: 0 10px 30px rgba(86, 58, 102, 0.06);
 }
+.door-film {
+  flex: 0 0 76px;
+  display: block;
+  overflow: hidden;
+  background: var(--accent-soft);
+}
+.door-film img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.88);
+}
+.door-copy {
+  flex: 1;
+  min-width: 0;
+  padding: 16px 16px 16px 14px;
+}
+.door:not(.has-film) .door-copy { padding: 20px 18px; }
 .door-kicker {
   display: block;
   color: var(--gold);
@@ -438,16 +477,17 @@ textarea { min-height: 88px; resize: vertical; }
 
 .book-head {
   text-align: center;
-  padding: 2px 8px 0;
+  padding: 10px 8px 2px;
 }
 .book-head .cover-name {
   margin-top: 4px;
-  font-size: 24px;
-  letter-spacing: 0.24em;
+  font-size: 26px;
+  letter-spacing: 0.28em;
 }
 .book-head .cover-line {
-  margin-top: 4px;
+  margin-top: 2px;
   font-size: 12px;
+  letter-spacing: 0.16em;
 }
 
 .wall {
@@ -489,32 +529,43 @@ textarea { min-height: 88px; resize: vertical; }
 
 .polaroid,
 .capsule {
-  flex: 0 0 72px;
-  width: 72px;
+  flex: 0 0 82px;
+  width: 82px;
   padding: 0;
   border: 0;
   background: none;
   color: inherit;
   text-align: left;
   transform: scale(0.96);
-  filter: saturate(0.84);
-  opacity: 0.88;
+  filter: saturate(0.86);
+  opacity: 0.9;
   transition: transform 0.35s ease, filter 0.35s ease, opacity 0.35s ease;
 }
 .polaroid.is-lingering,
 .capsule.is-lingering {
-  transform: scale(1.08);
-  filter: saturate(1.1);
+  transform: scale(1.07);
+  filter: saturate(1.08);
   opacity: 1;
   z-index: 2;
+}
+.film {
+  display: block;
+  padding: 4px 4px 7px;
+  background: #fffafd;
+  border-radius: 2px 2px 4px 4px;
+  box-shadow: 0 1px 0 rgba(230, 216, 236, 0.9), 0 8px 16px rgba(86, 58, 102, 0.08);
+}
+.polaroid.is-lingering .film,
+.capsule.is-lingering .film {
+  box-shadow: 0 0 0 1.5px var(--gold), 0 12px 22px rgba(86, 58, 102, 0.16);
 }
 .thumb,
 .thumb-empty {
   position: relative;
   display: block;
-  width: 72px;
-  height: 72px;
-  border-radius: 7px;
+  width: 74px;
+  height: 74px;
+  border-radius: 1px;
   overflow: hidden;
   background: #f0e8f4;
 }
@@ -539,11 +590,27 @@ textarea { min-height: 88px; resize: vertical; }
   font-size: 12px;
   letter-spacing: 0.2em;
 }
-.polaroid.is-lingering .thumb,
-.capsule.is-lingering .thumb,
-.polaroid.is-lingering .thumb-empty,
-.capsule.is-lingering .thumb-empty {
-  box-shadow: 0 0 0 1.5px var(--gold), 0 10px 20px rgba(86, 58, 102, 0.16);
+.film-cap {
+  display: block;
+  padding: 5px 2px 0;
+}
+.film-cap i {
+  display: block;
+  color: var(--accent-2);
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: 0.06em;
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "SimSun", serif;
+  white-space: nowrap;
+}
+.film-cap b {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .thumb-count {
   position: absolute;
@@ -558,25 +625,6 @@ textarea { min-height: 88px; resize: vertical; }
   font-style: normal;
   line-height: 16px;
   text-align: center;
-}
-.polaroid > span,
-.capsule > span {
-  display: block;
-  margin-top: 5px;
-  color: var(--accent-2);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
-.polaroid b,
-.capsule b {
-  display: block;
-  margin-top: 1px;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .thumb.is-set {
   box-shadow: 3px 3px 0 var(--surface), 4px 4px 0 1px var(--line);
@@ -697,7 +745,8 @@ body.has-sheet .track { animation-play-state: paused; }
   margin: 0;
   color: var(--gold);
   font-size: 11px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.2em;
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "SimSun", serif;
 }
 .sheet-top h2 {
   margin: 4px 0 0;
@@ -800,17 +849,21 @@ body.has-sheet .track { animation-play-state: paused; }
   background: var(--line);
 }
 .sheet-dots i.on { background: var(--accent); }
-.sheet-words { padding: 16px 18px 20px; }
-.sheet-letter + .sheet-letter { margin-top: 18px; }
+.sheet-words { padding: 22px 22px 24px; }
+.sheet-letter + .sheet-letter { margin-top: 22px; }
 .sheet-letter h3 {
-  margin: 0 0 8px;
-  font-size: 16px;
+  margin: 0 0 10px;
+  font-size: 18px;
   font-weight: 500;
+  letter-spacing: 0.1em;
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "SimSun", serif;
 }
 .sheet-letter p {
   margin: 0;
   white-space: pre-wrap;
   color: var(--ink);
+  line-height: 1.85;
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "SimSun", serif;
 }
 .sheet-actions {
   display: flex;
@@ -861,6 +914,10 @@ body.has-sheet .track { animation-play-state: paused; }
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
   }
+  .door { min-height: 104px; }
+  .door-film { flex-basis: 58px; }
+  .door strong { font-size: 18px; letter-spacing: 0.16em; }
+  .cover-name { font-size: 30px; letter-spacing: 0.26em; }
 }
 
 .cropper {

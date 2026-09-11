@@ -679,27 +679,31 @@ function render() {
   return renderDoor()
 }
 
+function doorHtml(who, kicker, name, line) {
+  const photo = coverPhoto(who)
+  return `<button class="door ${photo ? "has-film" : ""}" data-tab="${who}" type="button">
+    ${photo ? `<i class="door-film"><img src="${fileUrl(photo)}" alt="" /></i>` : ""}
+    <span class="door-copy">
+      <span class="door-kicker">${kicker}</span>
+      <strong>${name}</strong>
+      <em>${line}</em>
+    </span>
+  </button>`
+}
+
 function renderDoor() {
-  const photo = coverPhoto("her") || coverPhoto()
   $("main").innerHTML = `
     <section class="cover">
-      ${photo ? `<img class="leaf-photo" src="${fileUrl(photo)}" alt="" style="height:168px;border-radius:8px;margin:0 0 16px" />` : ""}
-      <p class="cover-mark">给她的两本册子</p>
-      <h2 class="cover-name">贺紫钦</h2>
-      <div class="flourish" aria-hidden="true"><span></span></div>
-      <p class="cover-line">与你的日子</p>
+      <div class="cover-title">
+        <p class="cover-mark">给她的两本册子</p>
+        <h2 class="cover-name">贺紫钦</h2>
+        <div class="flourish" aria-hidden="true"><span></span></div>
+        <p class="cover-line">把日子轻轻叠好</p>
+      </div>
     </section>
     <div class="doors">
-      <button class="door" data-tab="her" type="button">
-        <span class="door-kicker">第一本</span>
-        <strong>看她</strong>
-        <em>紫钦的样子</em>
-      </button>
-      <button class="door" data-tab="us" type="button">
-        <span class="door-kicker">第二本</span>
-        <strong>看我们</strong>
-        <em>两个人走过的日子</em>
-      </button>
+      ${doorHtml("her", "第一本", "看她", "她的样子")}
+      ${doorHtml("us", "第二本", "看我们", "一起走过的日子")}
     </div>
     ${state.entries.some(isTrial) ? `<p class="sub" style="text-align:center;margin-top:22px"><button class="link" data-act="clear-demo" type="button">清掉试片</button></p>` : ""}
   `
@@ -727,9 +731,13 @@ function thumbMedia(file, count) {
 function polaroidHtml(card) {
   const title = prettyTitle(card.entry)
   return `<button class="polaroid" data-open="${card.entry.id}" type="button">
-    ${thumbMedia(card.cover, card.count)}
-    <span>${formatDay(card.entry.happenedAt)}</span>
-    ${title ? `<b>${escapeHtml(title)}</b>` : ""}
+    <span class="film">
+      ${thumbMedia(card.cover, card.count)}
+      <span class="film-cap">
+        <i>${formatDay(card.entry.happenedAt)}</i>
+        ${title ? `<b>${escapeHtml(title)}</b>` : ""}
+      </span>
+    </span>
   </button>`
 }
 
@@ -763,7 +771,8 @@ function renderHer() {
     <section class="book-head">
       <button class="cover-mark" data-tab="door" type="button">回到封面</button>
       <h2 class="cover-name">紫钦</h2>
-      <p class="cover-line">一格是一组，点开看全集</p>
+      <div class="flourish slim" aria-hidden="true"><span></span></div>
+      <p class="cover-line">她的样子，慢慢走过来</p>
     </section>
     ${cards.length ? wallHtml(cards, polaroidHtml) : `<div class="empty"><p>还没把她的样子放进来。</p></div>`}
   `
@@ -777,9 +786,13 @@ function capsuleHtml(day) {
   const letter = media.length === 0
   const cover = media[0]
   return `<button class="capsule ${letter ? "is-letter" : ""}" data-day="${day.key}" type="button">
-    ${thumbMedia(cover && cover.file, media.length)}
-    <span>${formatDay(day.at)}</span>
-    ${title ? `<b>${escapeHtml(title)}</b>` : ""}
+    <span class="film">
+      ${thumbMedia(cover && cover.file, media.length)}
+      <span class="film-cap">
+        <i>${formatDay(day.at)}</i>
+        ${title ? `<b>${escapeHtml(title)}</b>` : ""}
+      </span>
+    </span>
   </button>`
 }
 
@@ -1006,7 +1019,8 @@ function renderUs() {
     <section class="book-head">
       <button class="cover-mark" data-tab="door" type="button">回到封面</button>
       <h2 class="cover-name">我们</h2>
-      <p class="cover-line">一格是一天的故事，点开看全集</p>
+      <div class="flourish slim" aria-hidden="true"><span></span></div>
+      <p class="cover-line">那些一起走过的日子</p>
     </section>
     ${days.length ? wallHtml(days, capsuleHtml) : `<div class="empty"><p>还没把那天写进来。</p></div>`}
   `
