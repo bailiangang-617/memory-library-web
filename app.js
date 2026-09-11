@@ -22,7 +22,9 @@ const state = {
   openYears: {},
   fileId: "",
   slide: 0,
-  dayKey: ""
+  dayKey: "",
+  sheetGallery: [],
+  peek: -1
 }
 
 let dbPromise = null
@@ -477,17 +479,50 @@ function albumWords(entries) {
   return blocks || `<p class="muted">还没写下字。</p>`
 }
 
+function albumGrid(count) {
+  if (count <= 1) return { cols: 1, rows: 1 }
+  if (count <= 4) return { cols: 2, rows: Math.ceil(count / 2) }
+  if (count <= 9) return { cols: 3, rows: Math.ceil(count / 3) }
+  return { cols: 4, rows: Math.ceil(count / 4) }
+}
+
 function albumPhotos(gallery) {
   if (!gallery.length) return `<p class="muted">这一组还没有照片。</p>`
-  return gallery.map((tile) => {
-    if (tile.file.mime.startsWith("video/")) {
-      return `<video src="${fileUrl(tile.file)}" controls playsinline preload="metadata"></video>`
-    }
-    return `<img src="${fileUrl(tile.file)}" alt="" />`
+  return gallery.map((tile, i) => {
+    const video = tile.file.mime.startsWith("video/")
+    return `<button class="sheet-pic" data-peek="${i}" type="button">
+      ${video
+        ? `<video src="${fileUrl(tile.file)}" muted playsinline preload="metadata"></video>`
+        : `<img src="${fileUrl(tile.file)}" alt="" />`}
+    </button>`
   }).join("")
 }
 
+function closePeek() {
+  state.peek = -1
+  const peek = $("peek")
+  if (!peek) return
+  peek.classList.add("hidden")
+  peek.innerHTML = ""
+}
+
+function openPeek(index) {
+  const tile = state.sheetGallery[index]
+  const peek = $("peek")
+  if (!tile || !peek) return
+  state.peek = index
+  const file = tile.file
+  peek.classList.remove("hidden")
+  peek.innerHTML = `
+    <button class="peek-close" data-act="close-peek" type="button">关闭</button>
+    ${file.mime.startsWith("video/")
+      ? `<video class="peek-media" src="${fileUrl(file)}" controls playsinline autoplay></video>`
+      : `<img class="peek-media" src="${fileUrl(file)}" alt="" />`}
+  `
+}
+
 function closeSheet() {
+  closePeek()
   const sheet = $("sheet")
   if (!sheet) return
   sheet.classList.add("hidden")
@@ -497,11 +532,15 @@ function closeSheet() {
   state.dayKey = ""
   state.fileId = ""
   state.slide = 0
+  state.sheetGallery = []
 }
 
 function openSheet({ title, date, gallery, entries, deleteId }) {
   const sheet = $("sheet")
   if (!sheet) return
+  state.sheetGallery = gallery || []
+  state.peek = -1
+  const grid = albumGrid(state.sheetGallery.length)
   document.body.classList.add("has-sheet")
   sheet.classList.remove("hidden")
   sheet.innerHTML = `
@@ -514,7 +553,7 @@ function openSheet({ title, date, gallery, entries, deleteId }) {
         <button class="link" data-act="close-sheet" type="button">关闭</button>
       </div>
       <div class="sheet-split">
-        <aside class="sheet-photos">${albumPhotos(gallery)}</aside>
+        <aside class="sheet-photos" style="--sheet-cols:${grid.cols};--sheet-rows:${grid.rows}">${albumPhotos(state.sheetGallery)}</aside>
         <article class="sheet-words">
           ${albumWords(entries)}
           ${entries.map((entry) => fileDocs(entry.files)).join("")}
@@ -524,6 +563,7 @@ function openSheet({ title, date, gallery, entries, deleteId }) {
         ${deleteId ? `<button class="btn danger" data-act="delete" data-id="${deleteId}" type="button">删除这一组</button>` : ""}
       </div>
     </div>
+    <div id="peek" class="peek hidden"></div>
   `
 }
 
@@ -865,7 +905,9 @@ function bindEvents() {
   $("main")?.addEventListener("click", onMainClick)
   $("sheet")?.addEventListener("click", onSheetClick)
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeSheet()
+    if (event.key !== "Escape") return
+    if (state.peek >= 0) closePeek()
+    else closeSheet()
   })
   $("main")?.addEventListener("change", onMainChange)
   $("main")?.addEventListener("pointerover", (event) => {
@@ -895,6 +937,15 @@ function unlock() {
 }
 
 function onSheetClick(event) {
+  if (event.target.closest("[data-act='close-peek']") || event.target.id === "peek") {
+    closePeek()
+    return
+  }
+  const peekBtn = event.target.closest("[data-peek]")
+  if (peekBtn) {
+    openPeek(Number(peekBtn.dataset.peek))
+    return
+  }
   if (event.target.id === "sheet" || event.target.closest("[data-act='close-sheet']")) {
     closeSheet()
     return
