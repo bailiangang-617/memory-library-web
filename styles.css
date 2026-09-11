@@ -108,6 +108,7 @@ button { cursor: pointer; }
   padding: 36px 28px 28px;
   border-radius: 8px 8px 20px 20px;
   text-align: center;
+  animation: cover-rise 0.85s ease both;
 }
 .kicker {
   margin: 0;
@@ -445,6 +446,19 @@ body.is-view [data-tab="add"] { display: none; }
 }
 .about-row { display: flex; gap: 8px; }
 .about-row .btn { flex: 1; }
+
+[data-enter="door"] .door:nth-child(1) { animation: cover-rise 0.8s 0.16s ease both; }
+[data-enter="door"] .door:nth-child(2) { animation: cover-rise 0.8s 0.3s ease both; }
+[data-enter="book"] .book-head { animation: cover-rise 0.55s ease both; }
+[data-enter="book"] .wall,
+[data-enter="book"] .empty { animation: book-enter 0.95s 0.08s ease both; }
+[data-enter="write"] .about-row,
+[data-enter="write"] .compose-types,
+[data-enter="write"] .form { animation: cover-rise 0.5s ease both; }
+@keyframes book-enter {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
 
 .doors {
   display: grid;
@@ -1071,4 +1085,53 @@ body.has-sheet .track { animation-play-state: paused; }
   position: absolute;
   display: block;
   max-width: none;
+}
+
+.folio {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  overflow: hidden;
+  pointer-events: none;
+}
+.folio-leaf {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 51%;
+  background:
+    linear-gradient(90deg, rgba(196, 165, 116, 0.1), transparent 22%),
+    var(--surface);
+  box-shadow: 0 0 48px rgba(44, 34, 54, 0.1);
+  transition: transform 1s cubic-bezier(0.22, 0.82, 0.28, 1);
+}
+.folio-leaf.left {
+  left: 0;
+  border-right: 1px solid var(--line);
+}
+.folio-leaf.right {
+  right: 0;
+  border-left: 1px solid var(--line);
+  background:
+    linear-gradient(270deg, rgba(196, 165, 116, 0.1), transparent 22%),
+    var(--surface);
+}
+.folio.is-open .folio-leaf.left { transform: translateX(-104%); }
+.folio.is-open .folio-leaf.right { transform: translateX(104%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .folio,
+  .cover-title,
+  .door,
+  .book-head,
+  .wall,
+  .empty,
+  .gate-card,
+  .sheet-card,
+  .about-row,
+  .compose-types,
+  .form {
+    animation: none !important;
+    transition: none !important;
+  }
 }

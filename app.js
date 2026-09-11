@@ -702,10 +702,14 @@ function render() {
   document.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("on", btn.dataset.tab === state.tab))
   $("page-title").textContent = titles[state.tab][0]
   $("page-sub").textContent = titles[state.tab][1]
-  if (state.tab === "add") return renderAdd()
-  if (state.tab === "her") return renderHer()
-  if (state.tab === "us") return renderUs()
-  return renderDoor()
+  if (state.tab === "add") renderAdd()
+  else if (state.tab === "her") renderHer()
+  else if (state.tab === "us") renderUs()
+  else renderDoor()
+  const main = $("main")
+  if (main) {
+    main.dataset.enter = state.tab === "add" ? "write" : state.tab === "door" ? "door" : "book"
+  }
 }
 
 function doorHtml(who, name, line) {
@@ -1557,6 +1561,27 @@ function toggleBgm() {
   btn.classList.add("off")
 }
 
+function prefersQuietMotion() {
+  return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+}
+
+function openTheBook() {
+  const folio = $("folio")
+  $("gate").classList.add("hidden")
+  $("app").classList.remove("hidden")
+  render()
+  startBgm()
+  if (!folio || prefersQuietMotion()) return
+  folio.classList.remove("hidden", "is-open")
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => folio.classList.add("is-open"))
+  })
+  window.setTimeout(() => {
+    folio.classList.add("hidden")
+    folio.classList.remove("is-open")
+  }, 1100)
+}
+
 function unlock() {
   const code = $("gate-input").value.trim()
   if (!ACCESS[code]) {
@@ -1564,9 +1589,7 @@ function unlock() {
     return
   }
   rememberGate(code)
-  $("gate").classList.add("hidden")
-  $("app").classList.remove("hidden")
-  startBgm()
+  openTheBook()
 }
 
 function onSheetClick(event) {
