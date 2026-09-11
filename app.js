@@ -253,7 +253,7 @@ function bgmEntry() {
 }
 
 function defaultBgmUrl() {
-  return "./bgm-zi.mp3?v=20260912a"
+  return "./bgm-zi.mp3?v=20260912b"
 }
 
 function bgmUrl() {
@@ -622,13 +622,11 @@ function groupByYear(cards) {
 }
 
 function usYearGroups(list) {
-  const days = []
-  for (const entry of list) {
-    const key = dayKey(entry.happenedAt)
-    const last = days[days.length - 1]
-    if (!last || last.key !== key) days.push({ key, at: entry.happenedAt, entries: [entry] })
-    else last.entries.push(entry)
-  }
+  const days = list.map((entry) => ({
+    key: entry.id,
+    at: entry.createdAt || entry.happenedAt,
+    entries: [entry]
+  }))
   const years = []
   for (const day of days) {
     const year = new Date(day.at).getFullYear()
@@ -1157,7 +1155,7 @@ function capsuleHtml(day) {
   return `<button class="capsule ${letter ? "is-letter" : ""}" data-day="${day.key}" type="button">
     <span class="film">
       ${thumbMedia(cover && cover.file, media.length)}
-      <span class="film-cap"><i>${formatDay(day.at)}</i></span>
+      <span class="film-cap"><i>${escapeHtml(prettyTitle(day.entries[0]) || "")}</i></span>
     </span>
   </button>`
 }
@@ -1191,13 +1189,12 @@ function sheetEditHtml() {
   if (!entries.length) return `<p class="muted">这一页还没有可以改的字。</p>`
   return `
     <div class="sheet-edit">
-      <p class="muted">只改字和日子，照片还在原来的地方。</p>
+      <p class="muted">只改字，照片还在原来的地方。</p>
       ${entries.map((entry, i) => `
         <section class="sheet-letter">
           ${entries.length > 1 ? `<p class="sheet-date">第${CN_NUM[i + 1] || (i + 1)}段</p>` : ""}
           <input class="input" data-edit-title="${entry.id}" placeholder="${titlePlaceholder(entry.type)}" value="${escapeHtml(editTitleValue(entry))}" />
-          <input class="input" type="datetime-local" data-edit-when="${entry.id}" value="${escapeHtml(toDatetimeLocal(entry.happenedAt))}" />
-          <textarea data-edit-body="${entry.id}" placeholder="${entry.type === "letter" ? "想在信旁边写一句也可以。" : "写给这一组的话，点开墙会显示在右边。"}">${escapeHtml(entry.body || "")}</textarea>
+          <textarea data-edit-body="${entry.id}" placeholder="${entry.type === "letter" ? "想在信旁边写一句也可以。" : "写给这一组的话，点开会显示在右边。"}">${escapeHtml(entry.body || "")}</textarea>
         </section>
       `).join("")}
       <div class="row-btns">
@@ -1233,16 +1230,14 @@ async function saveSheetEdit() {
   const ids = entries.map((entry) => entry.id)
   for (const entry of entries) {
     const titleEl = document.querySelector(`[data-edit-title="${entry.id}"]`)
-    const whenEl = document.querySelector(`[data-edit-when="${entry.id}"]`)
     const bodyEl = document.querySelector(`[data-edit-body="${entry.id}"]`)
     if (!titleEl) continue
     const title = titleEl.value.trim()
-    const when = whenEl?.value ? new Date(whenEl.value).getTime() : entry.happenedAt
     await persistEntry({
       ...entry,
       title: title || kindLabel(entry.type),
       body: (bodyEl?.value || "").trim(),
-      happenedAt: when,
+      happenedAt: entry.happenedAt,
       files: entry.files || []
     })
   }
@@ -1250,8 +1245,7 @@ async function saveSheetEdit() {
   await loadAll()
   render()
   const first = state.entries.find((item) => item.id === (viewId || ids[0]))
-  if (viewId && first) openEntrySheet(viewId)
-  else if (first) openDaySheet(dayKey(first.happenedAt))
+  if (first) openEntrySheet(first.id)
 }
 
 function albumIndex() {
@@ -1401,7 +1395,7 @@ function openSheet({ title, date, gallery, entries, deleteId }) {
     <div class="sheet-card">
       <div class="sheet-top">
         <div>
-          <p class="sheet-date">${escapeHtml(date)}</p>
+          ${date ? `<p class="sheet-date">${escapeHtml(date)}</p>` : ""}
           ${title ? `<h2>${escapeHtml(title)}</h2>` : ""}
         </div>
         <div class="sheet-tools">
@@ -1435,7 +1429,7 @@ function openEntrySheet(id) {
   state.dayKey = ""
   openSheet({
     title: prettyTitle(entry),
-    date: formatDay(entry.happenedAt),
+    date: "",
     gallery: mediaFiles(entry).map((file) => ({ entry, file })),
     entries: [entry],
     deleteId: entry.id
@@ -1446,11 +1440,11 @@ function openDaySheet(key) {
   const day = findDay(key)
   if (!day) return
   state.dayKey = key
-  state.view = null
+  state.view = day.entries[0]?.id || ""
   const titled = day.entries.find((item) => prettyTitle(item))
   openSheet({
     title: prettyTitle(titled || day.entries[0]),
-    date: formatDay(day.at),
+    date: "",
     gallery: dayMedia(day),
     entries: day.entries,
     deleteId: day.entries.length === 1 ? day.entries[0].id : ""
@@ -1488,7 +1482,6 @@ function renderAdd() {
     </div>
     <section class="card form">
       <input id="f-title" class="input" placeholder="${titlePlaceholder(type)}" value="${escapeHtml(state.draftTitle || "")}" />
-      <input id="f-when" class="input" type="datetime-local" value="${escapeHtml(state.draftWhen || toDatetimeLocal(Date.now()))}" />
       <textarea id="f-body" placeholder="${type === "photo" ? "写给她看的话，点开会在照片旁边。" : "想在信边再留一句。"}">${escapeHtml(state.draftBody || "")}</textarea>
       ${type === "photo" ? `<label class="btn ghost file-btn">${state.draftFiles.length ? "再放入照片或视频" : "放入照片或视频"}<input id="f-files" type="file" accept="image/*,video/*" multiple /></label>` : ""}
       ${type === "letter" ? `
@@ -1497,7 +1490,7 @@ function renderAdd() {
           <label class="btn ghost file-btn">放入照片、Word 或 PDF<input id="f-files" type="file" accept="${letterAccept}" multiple /></label>
         </div>
       ` : ""}
-      ${type === "photo" ? draftPreviewHtml("照片和视频可以放在同一组，墙上只占一格。") : draftPreviewHtml("可拍多页手写，也可放入 Word、PDF。")}
+      ${type === "photo" ? draftPreviewHtml("这一次放下的，会另成一组故事，不会盖住以前的。") : draftPreviewHtml("可拍多页手写，也可放入 Word、PDF。")}
       <button class="btn primary" id="f-save" type="button">放进我们的册子</button>
     </section>
     <section class="card form">
@@ -1627,7 +1620,7 @@ function renderDetail(id) {
   state.slide = Math.min(state.slide, Math.max(gallery.length - 1, 0))
   renderLookPage({
     title: prettyTitle(entry) || (inferWho(entry) === "us" ? "我们" : "字"),
-    date: formatDay(entry.happenedAt),
+    date: "",
     words: entry.body ? `<section class="letter-sheet">${escapeHtml(entry.body)}</section>` : "",
     gallery,
     docs: fileDocs(entry.files),
@@ -1649,7 +1642,7 @@ function renderDayLook(key) {
   state.slide = Math.min(state.slide, Math.max(gallery.length - 1, 0))
   renderLookPage({
     title: prettyTitle(titled || day.entries[0]),
-    date: formatDay(day.at),
+    date: "",
     words,
     gallery,
     docs,
@@ -2237,7 +2230,7 @@ async function saveCompose() {
   const type = state.compose
   stashForm()
   const title = (state.draftTitle || "").trim() || kindLabel(type)
-  const when = state.draftWhen ? new Date(state.draftWhen).getTime() : Date.now()
+  const when = Date.now()
   const body = (state.draftBody || "").trim()
   let files = []
   if (type === "photo" || type === "letter" || type === "video") {
