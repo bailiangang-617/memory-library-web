@@ -990,13 +990,9 @@ function renderTale() {
         <p class="tale-guide">${her
           ? "先看最近的几页。灯下的侧脸，广州的风，后来又见的几次。看完，整面墙交给你。"
           : "四月十九，人到广州，花递过去，话也落了地。先把最近走过的慢慢看一遍，再让日子自己往前流。"}</p>
-        <div class="tale-actions">
-          <button class="btn ghost" data-act="tale-go" type="button">往下翻</button>
-          <button class="link quiet" data-act="skip-tale" type="button">自己翻</button>
-        </div>
       </section>
     `
-    scheduleTale(5600, taleGo)
+    scheduleTale(4200, taleGo)
     return
   }
   showTaleScene()
