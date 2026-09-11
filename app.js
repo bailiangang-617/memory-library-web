@@ -9,20 +9,13 @@ const KINDS = [
   { type: "note", label: "一句话" }
 ]
 
-const FILTERS = [
-  { id: "all", label: "全部" },
-  { id: "her", label: "紫钦" },
-  { id: "us", label: "我们" },
-  { id: "words", label: "字" }
-]
-
 const MONTHS = ["正月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"]
 const CN_NUM = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九"]
+const SEASONS = ["冬", "春", "夏", "秋"]
 
 const state = {
-  tab: "story",
+  tab: "door",
   entries: [],
-  filter: "all",
   view: null,
   compose: "photo",
   about: "her"
@@ -174,23 +167,31 @@ function formatDay(ts) {
   return `${MONTHS[d.getMonth()]}${d.getDate()}日`
 }
 
-function monthLabel(ts) {
-  const d = new Date(ts || Date.now())
-  return `${cnYear(d.getFullYear())}  ·  ${MONTHS[d.getMonth()]}`
+function seasonOf(ts) {
+  const month = new Date(ts || Date.now()).getMonth()
+  if (month === 11 || month < 2) return 0
+  if (month < 5) return 1
+  if (month < 8) return 2
+  return 3
 }
 
-function monthKey(ts) {
+function seasonLabel(ts) {
   const d = new Date(ts || Date.now())
-  return `${d.getFullYear()}-${d.getMonth()}`
+  return `${cnYear(d.getFullYear())}  ·  ${SEASONS[seasonOf(ts)]}`
+}
+
+function seasonKey(ts) {
+  const d = new Date(ts || Date.now())
+  return `${d.getFullYear()}-${seasonOf(ts)}`
 }
 
 function groupedEntries(list) {
   const groups = []
   for (const entry of list) {
-    const key = monthKey(entry.happenedAt)
+    const key = seasonKey(entry.happenedAt)
     const last = groups[groups.length - 1]
     if (!last || last.key !== key) {
-      groups.push({ key, label: monthLabel(entry.happenedAt), items: [entry] })
+      groups.push({ key, label: seasonLabel(entry.happenedAt), items: [entry] })
     } else {
       last.items.push(entry)
     }
@@ -198,8 +199,14 @@ function groupedEntries(list) {
   return groups
 }
 
-function coverPhoto() {
-  for (const entry of state.entries) {
+function bookEntries(who) {
+  if (who === "her") return state.entries.filter((item) => inferWho(item) === "her")
+  return state.entries.filter((item) => inferWho(item) !== "her")
+}
+
+function coverPhoto(who) {
+  const list = who ? bookEntries(who) : state.entries
+  for (const entry of list) {
     const photo = (entry.files || []).find((file) => file.mime.startsWith("image/"))
     if (photo) return photo
   }
@@ -229,55 +236,88 @@ async function filesFromInput(list) {
   }))
 }
 
-function filteredEntries() {
-  if (state.filter === "all") return state.entries
-  return state.entries.filter((item) => inferWho(item) === state.filter)
-}
-
 function render() {
   const titles = {
-    story: ["册子", "与紫钦的日子"],
-    add: ["写下", "想留给她的，都可以放进来"],
-    mine: ["我们", "这本册子只给你们两个人"]
+    door: ["贺紫钦", "与你的日子"],
+    her: ["紫钦", "看她"],
+    us: ["我们", "与你的日子"],
+    add: ["写下", "先选这是紫钦，还是我们"]
   }
-  $("app")?.classList.toggle("is-album", state.tab === "story" && !state.view)
+  $("app")?.classList.toggle("is-book", !state.view && state.tab !== "add")
+  document.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("on", btn.dataset.tab === state.tab))
   if (!state.view) {
     $("page-title").textContent = titles[state.tab][0]
     $("page-sub").textContent = titles[state.tab][1]
   }
   if (state.view) return renderDetail(state.view)
   if (state.tab === "add") return renderAdd()
-  if (state.tab === "mine") return renderMine()
-  return renderStory()
+  if (state.tab === "her") return renderHer()
+  if (state.tab === "us") return renderUs()
+  return renderDoor()
 }
 
-function renderStory() {
-  const list = filteredEntries()
-  const photo = coverPhoto()
-  const cover = `
+function renderDoor() {
+  const photo = coverPhoto("her") || coverPhoto()
+  $("main").innerHTML = `
     <section class="cover">
-      ${photo ? `<img class="leaf-photo" src="${fileUrl(photo)}" alt="" style="height:180px;border-radius:8px;margin:0 0 16px" />` : ""}
-      <p class="cover-mark">给她的册子</p>
+      ${photo ? `<img class="leaf-photo" src="${fileUrl(photo)}" alt="" style="height:168px;border-radius:8px;margin:0 0 16px" />` : ""}
+      <p class="cover-mark">给她的两本册子</p>
       <h2 class="cover-name">贺紫钦</h2>
       <div class="flourish" aria-hidden="true"><span></span></div>
-      <p class="cover-line">${state.entries.length ? `已有 ${state.entries.length} 页回忆` : "还没把那天放进来"}</p>
+      <p class="cover-line">与你的日子</p>
     </section>
-    <div class="links">
-      ${FILTERS.map((item) => `<button class="link ${state.filter === item.id ? "on" : ""}" data-filter="${item.id}" type="button">${item.label}</button>`).join("")}
+    <div class="doors">
+      <button class="door" data-tab="her" type="button">
+        <span class="door-kicker">第一本</span>
+        <strong>看她</strong>
+        <em>紫钦的样子</em>
+      </button>
+      <button class="door" data-tab="us" type="button">
+        <span class="door-kicker">第二本</span>
+        <strong>看我们</strong>
+        <em>两个人走过的日子</em>
+      </button>
     </div>
   `
-  if (!state.entries.length) {
-    $("main").innerHTML = `${cover}<div class="empty"><p>照片、视频、对话或一封信，都可以从「写下」放进来。</p></div>`
-    return
+}
+
+function renderHer() {
+  const list = bookEntries("her")
+  const tiles = []
+  for (const entry of list) {
+    const files = (entry.files || []).filter((file) => file.mime.startsWith("image/") || file.mime.startsWith("video/"))
+    for (const file of files) tiles.push({ entry, file })
   }
-  if (!list.length) {
-    $("main").innerHTML = `${cover}<div class="empty"><p>这一面还是空的。</p></div>`
-    return
-  }
-  $("main").innerHTML = cover + groupedEntries(list).map((group) => `
-    <div class="chapter">${group.label}</div>
-    ${group.items.map(cardHtml).join("")}
-  `).join("")
+  $("main").innerHTML = `
+    <section class="book-head">
+      <button class="cover-mark" data-tab="door" type="button">回到封面</button>
+      <h2 class="cover-name">紫钦</h2>
+      <div class="flourish" aria-hidden="true"><span></span></div>
+    </section>
+    ${tiles.length ? `<div class="wall">${tiles.map((tile) => `
+      <button class="polaroid" data-open="${tile.entry.id}" type="button">
+        ${tile.file.mime.startsWith("video/")
+          ? `<video src="${fileUrl(tile.file)}" muted></video>`
+          : `<img src="${fileUrl(tile.file)}" alt="" />`}
+        <span>${formatDay(tile.entry.happenedAt)}</span>
+      </button>
+    `).join("")}</div>` : `<div class="empty"><p>还没把她的样子放进来。</p></div>`}
+  `
+}
+
+function renderUs() {
+  const list = bookEntries("us")
+  $("main").innerHTML = `
+    <section class="book-head">
+      <button class="cover-mark" data-tab="door" type="button">回到封面</button>
+      <h2 class="cover-name">我们</h2>
+      <div class="flourish" aria-hidden="true"><span></span></div>
+    </section>
+    ${list.length ? groupedEntries(list).map((group) => `
+      <div class="chapter">${group.label}</div>
+      ${group.items.map(cardHtml).join("")}
+    `).join("") : `<div class="empty"><p>还没把那天写进来。</p></div>`}
+  `
 }
 
 function cardHtml(entry) {
@@ -297,17 +337,20 @@ function cardHtml(entry) {
 }
 
 function renderAdd() {
+  if (state.about === "her" && state.compose !== "photo" && state.compose !== "video") {
+    state.compose = "photo"
+  }
   const type = state.compose
-  const media = type === "photo" || type === "video"
+  const kinds = state.about === "her" ? KINDS.filter((item) => item.type === "photo" || item.type === "video") : KINDS
   $("main").innerHTML = `
+    <div class="about-row" style="margin-top:8px">
+      <button class="btn ${state.about === "her" ? "primary" : "plain"}" data-about="her" type="button">紫钦</button>
+      <button class="btn ${state.about === "us" ? "primary" : "plain"}" data-about="us" type="button">我们</button>
+    </div>
     <div class="compose-types">
-      ${KINDS.map((item) => `<button class="btn ${type === item.type ? "primary" : "plain"}" data-compose="${item.type}" type="button">${item.label}</button>`).join("")}
+      ${kinds.map((item) => `<button class="btn ${type === item.type ? "primary" : "plain"}" data-compose="${item.type}" type="button">${item.label}</button>`).join("")}
     </div>
     <section class="card form">
-      ${media ? `<div class="about-row">
-        <button class="btn ${state.about === "her" ? "primary" : "plain"}" data-about="her" type="button">紫钦</button>
-        <button class="btn ${state.about === "us" ? "primary" : "plain"}" data-about="us" type="button">我们</button>
-      </div>` : ""}
       <input id="f-title" class="input" placeholder="${titlePlaceholder(type)}" />
       <input id="f-when" class="input" type="datetime-local" value="${toDatetimeLocal(Date.now())}" />
       <textarea id="f-body" placeholder="${type === "chat" ? "把想留下的那几句贴进来。" : "想在旁边写一句吗？也可以不写。"}"></textarea>
@@ -316,7 +359,7 @@ function renderAdd() {
       ${type === "video" ? `<label class="btn ghost file-btn">放入视频<input id="f-files" type="file" accept="video/*" multiple /></label>` : ""}
       ${type === "letter" ? `<label class="btn ghost file-btn">放入信<input id="f-files" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label>` : ""}
       <p id="f-picked" class="muted"></p>
-      <button class="btn primary" id="f-save" type="button">放进册子</button>
+      <button class="btn primary" id="f-save" type="button">放进${state.about === "her" ? "她的册子" : "我们的册子"}</button>
     </section>
   `
 }
@@ -410,22 +453,18 @@ function unlock() {
 function switchTab(tab) {
   state.tab = tab
   state.view = null
-  document.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("on", btn.dataset.tab === tab))
+  if (tab === "her") state.about = "her"
+  if (tab === "us") state.about = "us"
   render()
 }
 
 async function onMainClick(event) {
   const tab = event.target.closest("[data-tab]")
   if (tab) return switchTab(tab.dataset.tab)
-  const filter = event.target.closest("[data-filter]")
-  if (filter) {
-    state.filter = filter.dataset.filter
-    render()
-    return
-  }
   const about = event.target.closest("[data-about]")
   if (about) {
     state.about = about.dataset.about
+    if (state.about === "her" && state.compose !== "photo" && state.compose !== "video") state.compose = "photo"
     render()
     return
   }
@@ -539,10 +578,8 @@ async function saveCompose() {
   try {
     const saved = await persistEntry(entry)
     await loadAll()
-    state.tab = "story"
-    state.filter = "all"
+    state.tab = who === "her" ? "her" : "us"
     state.view = saved.id
-    document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("on", tab.dataset.tab === "story"))
     render()
   } catch (error) {
     alert(error.message || "保存失败")
@@ -571,7 +608,7 @@ async function runSelfTest() {
   const text = `${ok ? "SELFTEST_OK" : "SELFTEST_FAIL"} entries=${state.entries.length}`
   document.title = text
   document.body.insertAdjacentHTML("afterbegin", `<pre id="selftest-result">${text}</pre>`)
-  switchTab("story")
+  switchTab("us")
 }
 
 async function sampleFile(name, mime) {
@@ -673,10 +710,8 @@ async function loadDemo() {
     })
   }
   await loadAll()
-  state.tab = "story"
-  state.filter = "all"
+  state.tab = "door"
   state.view = null
-  document.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("on", btn.dataset.tab === "story"))
   render()
 }
 
