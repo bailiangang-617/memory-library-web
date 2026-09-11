@@ -338,7 +338,6 @@ async function filesFromInput(list) {
 }
 
 function render() {
-  stopWalls()
   const titles = {
     door: ["贺紫钦", "与你的日子"],
     her: ["紫钦", "看她"],
@@ -658,15 +657,7 @@ function isTrial(entry) {
 }
 
 let lingerWait = 0
-const wallRuns = []
-
-function stopWalls() {
-  wallRuns.forEach((run) => {
-    run.dead = true
-    if (run.raf) cancelAnimationFrame(run.raf)
-  })
-  wallRuns.length = 0
-}
+const trackSeeds = new WeakMap()
 
 function updateLinger() {
   const walls = Array.from(document.querySelectorAll("[data-wall]"))
@@ -699,10 +690,10 @@ function fillTrackSet(track) {
   const wall = track.closest("[data-wall]")
   const set = track.querySelector(".track-set")
   if (!wall || !set || !set.children.length) return 0
-  const seed = set.dataset.seed || set.innerHTML
-  set.dataset.seed = seed
+  if (!trackSeeds.has(set)) trackSeeds.set(set, set.innerHTML)
+  const seed = trackSeeds.get(set)
   const copies = Array.from(track.querySelectorAll(".track-set"))
-  const need = Math.max(wall.clientWidth, 320) + 24
+  const need = Math.max(wall.clientWidth, 360) + 32
   let guard = 0
   while (set.offsetWidth < need && guard < 8) {
     set.insertAdjacentHTML("beforeend", seed)
@@ -714,57 +705,40 @@ function fillTrackSet(track) {
   return set.offsetWidth
 }
 
-function startTrack(track) {
-  const wall = track.closest("[data-wall]")
-  const set = track.querySelector(".track-set")
-  if (!wall || !set) return
-  const dir = Number(track.dataset.dir) || -1
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  const speed = reduce ? 0 : Number(track.dataset.speed) || 24
-  let x = 0
-  let last = performance.now()
-  let lingerAt = 0
-  const run = { dead: false, raf: 0 }
-  wallRuns.push(run)
-  fillTrackSet(track)
-
-  function tick(now) {
-    if (run.dead) return
-    const dt = Math.min(48, now - last)
-    last = now
-    const width = set.offsetWidth || fillTrackSet(track)
-    if (width && speed && !wall.classList.contains("is-paused") && !document.hidden) {
-      x += dir * speed * (dt / 1000)
-      if (x <= -width) x += width
-      if (x >= width) x -= width
-      track.style.transform = `translate3d(${x}px,0,0)`
-    }
-    if (now - lingerAt > 220) {
-      lingerAt = now
-      updateLinger()
-    }
-    run.raf = requestAnimationFrame(tick)
-  }
-  run.raf = requestAnimationFrame(tick)
+function syncTrackMotion(track) {
+  const width = fillTrackSet(track) || 480
+  track.style.setProperty("--wall-dur", `${Math.max(7, width / 62)}s`)
 }
 
 function bindWalls() {
+  document.querySelectorAll("[data-track]").forEach((track) => {
+    syncTrackMotion(track)
+    track.querySelectorAll("img").forEach((img) => {
+      if (img.complete) return
+      img.addEventListener("load", () => syncTrackMotion(track), { once: true })
+    })
+  })
   document.querySelectorAll("[data-wall]").forEach((wall) => {
-    wall.addEventListener("pointerover", (event) => {
+    wall.addEventListener("pointerdown", (event) => {
       if (event.target.closest(".polaroid, .capsule")) wall.classList.add("is-paused")
     })
-    wall.addEventListener("pointerout", (event) => {
-      const item = event.target.closest(".polaroid, .capsule")
-      if (!item) return
-      const next = event.relatedTarget && event.relatedTarget.closest && event.relatedTarget.closest(".polaroid, .capsule")
-      if (next) return
-      window.setTimeout(() => {
-        if (!wall.querySelector(".polaroid:hover, .capsule:hover")) wall.classList.remove("is-paused")
-      }, 900)
+    wall.addEventListener("pointerup", () => {
+      window.setTimeout(() => wall.classList.remove("is-paused"), 1000)
     })
-    wall.querySelectorAll("[data-track]").forEach(startTrack)
+    wall.addEventListener("pointercancel", () => wall.classList.remove("is-paused"))
+    if (window.matchMedia("(hover: hover)").matches) {
+      wall.addEventListener("pointerover", (event) => {
+        if (event.target.closest(".polaroid, .capsule")) wall.classList.add("is-paused")
+      })
+      wall.addEventListener("pointerout", (event) => {
+        const item = event.target.closest(".polaroid, .capsule")
+        if (!item) return
+        const next = event.relatedTarget && event.relatedTarget.closest && event.relatedTarget.closest(".polaroid, .capsule")
+        if (!next) wall.classList.remove("is-paused")
+      })
+    }
   })
-  updateLinger()
+  window.setTimeout(updateLinger, 80)
 }
 
 function queueLinger(immediate) {

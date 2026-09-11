@@ -374,10 +374,26 @@ textarea { min-height: 88px; resize: vertical; }
 .track {
   display: flex;
   width: max-content;
-  will-change: transform;
+  transform: translateZ(0);
+  animation: wall-go var(--wall-dur, 14s) linear infinite;
+}
+.track[data-dir="1"] {
+  animation-name: wall-back;
+}
+.wall.is-paused .track {
+  animation-play-state: paused;
+}
+@keyframes wall-go {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+@keyframes wall-back {
+  from { transform: translate3d(-50%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
 }
 .track-set {
   display: flex;
+  flex: 0 0 auto;
   gap: 6px;
   padding-right: 6px;
 }
