@@ -338,6 +338,7 @@ async function filesFromInput(list) {
 }
 
 function render() {
+  stopWalls()
   const titles = {
     door: ["贺紫钦", "与你的日子"],
     her: ["紫钦", "看她"],
@@ -410,22 +411,37 @@ function polaroidHtml(card) {
   </button>`
 }
 
+function splitRows(items, rows) {
+  const out = Array.from({ length: rows }, () => [])
+  items.forEach((item, i) => out[i % rows].push(item))
+  return out.filter((row) => row.length)
+}
+
+function wallHtml(items, htmlFn) {
+  if (!items.length) return ""
+  const rows = items.length >= 6 ? 3 : items.length >= 2 ? 2 : 1
+  return `<div class="wall" data-wall>
+    ${splitRows(items, rows).map((row, i) => {
+      const inner = row.map(htmlFn).join("")
+      return `<div class="track" data-track data-dir="${i % 2 ? 1 : -1}" data-speed="${20 + (i % 3) * 6}">
+        <div class="track-set">${inner}</div>
+        <div class="track-set" aria-hidden="true">${inner}</div>
+      </div>`
+    }).join("")}
+  </div>`
+}
+
 function renderHer() {
   const cards = herCards()
-  const years = groupByYear(cards)
   $("main").innerHTML = `
     <section class="book-head">
       <button class="cover-mark" data-tab="door" type="button">回到封面</button>
       <h2 class="cover-name">紫钦</h2>
-      <p class="cover-line">左右滑着看，点开才是一张</p>
+      <p class="cover-line">墙自己走，停在谁身上再点开</p>
     </section>
-    ${cards.length ? years.map((block) => {
-      const open = isYearOpen(block.year)
-      return `${yearFold(block.year, block.items.length, "组")}
-        ${open ? `<div class="reel-wrap"><div class="reel" data-reel>${block.items.map(polaroidHtml).join("")}</div></div>` : ""}`
-    }).join("") : `<div class="empty"><p>还没把她的样子放进来。</p></div>`}
+    ${cards.length ? wallHtml(cards, polaroidHtml) : `<div class="empty"><p>还没把她的样子放进来。</p></div>`}
   `
-  bindReels()
+  bindWalls()
 }
 
 function capsuleHtml(day) {
@@ -442,24 +458,16 @@ function capsuleHtml(day) {
 }
 
 function renderUs() {
-  const years = usYearGroups(bookEntries("us"))
+  const days = usYearGroups(bookEntries("us")).flatMap((block) => block.seasons.flatMap((season) => season.days))
   $("main").innerHTML = `
     <section class="book-head">
       <button class="cover-mark" data-tab="door" type="button">回到封面</button>
       <h2 class="cover-name">我们</h2>
-      <p class="cover-line">左右滑着看，点开才是那天</p>
+      <p class="cover-line">墙自己走，停在那天再点开</p>
     </section>
-    ${years.length ? years.map((block) => {
-      const count = block.seasons.reduce((sum, season) => sum + season.days.length, 0)
-      const open = isYearOpen(block.year)
-      return `${yearFold(block.year, count, "天")}
-        ${open ? block.seasons.map((season) => `
-          <div class="chapter">${season.label}</div>
-          <div class="reel-wrap"><div class="reel" data-reel>${season.days.map(capsuleHtml).join("")}</div></div>
-        `).join("") : ""}`
-    }).join("") : `<div class="empty"><p>还没把那天写进来。</p></div>`}
+    ${days.length ? wallHtml(days, capsuleHtml) : `<div class="empty"><p>还没把那天写进来。</p></div>`}
   `
-  bindReels()
+  bindWalls()
 }
 
 function renderAdd() {
@@ -650,22 +658,32 @@ function isTrial(entry) {
 }
 
 let lingerWait = 0
+const wallRuns = []
+
+function stopWalls() {
+  wallRuns.forEach((run) => {
+    run.dead = true
+    if (run.raf) cancelAnimationFrame(run.raf)
+  })
+  wallRuns.length = 0
+}
 
 function updateLinger() {
-  const reels = Array.from(document.querySelectorAll("[data-reel]"))
-  if (!reels.length) return
-  for (const reel of reels) {
-    const items = Array.from(reel.querySelectorAll(".polaroid, .capsule"))
+  const walls = Array.from(document.querySelectorAll("[data-wall]"))
+  if (!walls.length) return
+  for (const wall of walls) {
+    const items = Array.from(wall.querySelectorAll(".polaroid, .capsule"))
     if (!items.length) continue
-    const box = reel.getBoundingClientRect()
+    const box = wall.getBoundingClientRect()
     const hovered = items.find((el) => el.matches(":hover"))
     let best = hovered || null
     let bestDist = Infinity
     if (!hovered) {
-      const mid = box.left + box.width * 0.38
+      const mid = box.left + box.width * 0.4
       for (const el of items) {
         const item = el.getBoundingClientRect()
-        if (item.right < box.left + 6 || item.left > box.right - 6) continue
+        if (item.right < box.left || item.left > box.right) continue
+        if (item.bottom < box.top || item.top > box.bottom) continue
         const dist = Math.abs((item.left + item.right) / 2 - mid)
         if (dist < bestDist) {
           bestDist = dist
@@ -677,9 +695,74 @@ function updateLinger() {
   }
 }
 
-function bindReels() {
-  document.querySelectorAll("[data-reel]").forEach((reel) => {
-    reel.addEventListener("scroll", () => queueLinger(false), { passive: true })
+function fillTrackSet(track) {
+  const wall = track.closest("[data-wall]")
+  const set = track.querySelector(".track-set")
+  if (!wall || !set || !set.children.length) return 0
+  const seed = set.dataset.seed || set.innerHTML
+  set.dataset.seed = seed
+  const copies = Array.from(track.querySelectorAll(".track-set"))
+  const need = Math.max(wall.clientWidth, 320) + 24
+  let guard = 0
+  while (set.offsetWidth < need && guard < 8) {
+    set.insertAdjacentHTML("beforeend", seed)
+    guard += 1
+  }
+  copies.forEach((copy, i) => {
+    if (i && copy.innerHTML !== set.innerHTML) copy.innerHTML = set.innerHTML
+  })
+  return set.offsetWidth
+}
+
+function startTrack(track) {
+  const wall = track.closest("[data-wall]")
+  const set = track.querySelector(".track-set")
+  if (!wall || !set) return
+  const dir = Number(track.dataset.dir) || -1
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  const speed = reduce ? 0 : Number(track.dataset.speed) || 24
+  let x = 0
+  let last = performance.now()
+  let lingerAt = 0
+  const run = { dead: false, raf: 0 }
+  wallRuns.push(run)
+  fillTrackSet(track)
+
+  function tick(now) {
+    if (run.dead) return
+    const dt = Math.min(48, now - last)
+    last = now
+    const width = set.offsetWidth || fillTrackSet(track)
+    if (width && speed && !wall.classList.contains("is-paused") && !document.hidden) {
+      x += dir * speed * (dt / 1000)
+      if (x <= -width) x += width
+      if (x >= width) x -= width
+      track.style.transform = `translate3d(${x}px,0,0)`
+    }
+    if (now - lingerAt > 220) {
+      lingerAt = now
+      updateLinger()
+    }
+    run.raf = requestAnimationFrame(tick)
+  }
+  run.raf = requestAnimationFrame(tick)
+}
+
+function bindWalls() {
+  document.querySelectorAll("[data-wall]").forEach((wall) => {
+    wall.addEventListener("pointerover", (event) => {
+      if (event.target.closest(".polaroid, .capsule")) wall.classList.add("is-paused")
+    })
+    wall.addEventListener("pointerout", (event) => {
+      const item = event.target.closest(".polaroid, .capsule")
+      if (!item) return
+      const next = event.relatedTarget && event.relatedTarget.closest && event.relatedTarget.closest(".polaroid, .capsule")
+      if (next) return
+      window.setTimeout(() => {
+        if (!wall.querySelector(".polaroid:hover, .capsule:hover")) wall.classList.remove("is-paused")
+      }, 900)
+    })
+    wall.querySelectorAll("[data-track]").forEach(startTrack)
   })
   updateLinger()
 }

@@ -361,51 +361,45 @@ textarea { min-height: 88px; resize: vertical; }
   font-size: 12px;
 }
 
-.reel-wrap {
-  position: relative;
-  margin: 0 -8px;
-}
-.reel-wrap::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 10px;
-  width: 22px;
-  pointer-events: none;
-  background: linear-gradient(90deg, transparent, var(--bg));
-}
-.reel {
+.wall {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: 16px;
-  padding: 10px 20px 16px 16px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  overflow: hidden;
+  margin: 10px -16px 0;
+  padding: 8px 0 6px;
+  mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
 }
-.reel::-webkit-scrollbar { display: none; }
+.track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+.track-set {
+  display: flex;
+  gap: 6px;
+  padding-right: 6px;
+}
 
 .polaroid,
 .capsule {
-  flex: 0 0 86px;
-  width: 86px;
+  flex: 0 0 72px;
+  width: 72px;
   padding: 0;
   border: 0;
   background: none;
   color: inherit;
   text-align: left;
-  scroll-snap-align: center;
-  transform: scale(0.94);
-  filter: saturate(0.8);
-  opacity: 0.82;
-  transition: transform 0.45s ease, filter 0.45s ease, opacity 0.45s ease;
+  transform: scale(0.96);
+  filter: saturate(0.84);
+  opacity: 0.88;
+  transition: transform 0.35s ease, filter 0.35s ease, opacity 0.35s ease;
 }
 .polaroid.is-lingering,
 .capsule.is-lingering {
-  transform: scale(1.06);
-  filter: saturate(1.08);
+  transform: scale(1.08);
+  filter: saturate(1.1);
   opacity: 1;
   z-index: 2;
 }
@@ -413,9 +407,9 @@ textarea { min-height: 88px; resize: vertical; }
 .thumb-empty {
   position: relative;
   display: block;
-  width: 86px;
-  height: 86px;
-  border-radius: 8px;
+  width: 72px;
+  height: 72px;
+  border-radius: 7px;
   overflow: hidden;
   background: #f0e8f4;
 }
