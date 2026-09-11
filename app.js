@@ -1033,9 +1033,11 @@ function renderTale() {
         <p class="cover-mark tale-fade">${her ? "先看她" : "先看我们"}</p>
         <h2 class="cover-name tale-fade late">${her ? "紫钦" : "我们"}</h2>
         <div class="flourish tale-fade late" aria-hidden="true"><span></span></div>
-        <p class="cover-line tale-type" id="tale-line"></p>
-        <p class="tale-guide tale-type" id="tale-guide"></p>
-        <p class="tale-guide tale-type soft" id="tale-guide-b"></p>
+        <div class="tale-letter">
+          <p class="cover-line tale-type" id="tale-line"></p>
+          <p class="tale-guide tale-type" id="tale-guide"></p>
+          <p class="tale-guide tale-type soft" id="tale-guide-b"></p>
+        </div>
       </section>
     `
     playIntroWords(her)

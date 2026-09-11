@@ -1107,9 +1107,19 @@ body.has-sheet .track { animation-play-state: paused; }
   justify-content: center;
   padding: 8px 16px 24px;
 }
-.tale-intro { flex-direction: column; text-align: center; }
+.tale-intro {
+  flex-direction: column;
+  justify-content: flex-start;
+  text-align: center;
+  padding-top: min(12vh, 88px);
+}
 .tale-fade { animation: cover-rise 0.9s ease both; }
 .tale-fade.late { animation-delay: 0.28s; }
+.tale-letter {
+  width: min(26em, 100%);
+  margin: 22px auto 0;
+  text-align: left;
+}
 .tale-type {
   min-height: 1.6em;
 }
@@ -1123,12 +1133,12 @@ body.has-sheet .track { animation-play-state: paused; }
   50% { opacity: 0; }
 }
 .tale-intro .cover-line {
-  margin-top: 18px;
+  margin-top: 0;
   letter-spacing: 0.2em;
 }
 .tale-guide {
-  max-width: 26em;
-  margin: 18px auto 0;
+  max-width: none;
+  margin: 18px 0 0;
   color: var(--ink);
   font-size: 15px;
   line-height: 2;
