@@ -253,7 +253,7 @@ function bgmEntry() {
 }
 
 function defaultBgmUrl() {
-  return "./bgm-zi.mp3?v=20260912e"
+  return "./bgm-zi.mp3?v=20260912f"
 }
 
 function bgmUrl() {

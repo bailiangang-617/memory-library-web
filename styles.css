@@ -177,7 +177,14 @@ textarea { min-height: 88px; resize: vertical; }
 body.is-view .app.is-remember main {
   padding-bottom: calc(12px + env(safe-area-inset-bottom));
 }
-.app.is-remember .book-head,
+.app.is-remember .book-head {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-left: 16px;
+  padding-right: 16px;
+}
 .app.is-remember .empty {
   flex: 0 0 auto;
   padding-left: 16px;
@@ -618,6 +625,11 @@ body.is-view .tabbar { display: none; }
   line-height: 1.75;
   letter-spacing: 0.04em;
 }
+.app.is-remember .book-head .cover-line {
+  margin-top: auto;
+  margin-bottom: 8px;
+  padding-top: 20px;
+}
 
 .wall {
   display: flex;
@@ -630,14 +642,13 @@ body.is-view .tabbar { display: none; }
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
 }
 .app.is-remember .wall {
-  flex: 1;
+  flex: 0 0 auto;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: clamp(10px, 3vh, 22px);
+  margin-top: 6px;
   margin-bottom: 0;
   padding-top: 0;
   padding-bottom: 4px;
-  min-height: 0;
 }
 .track {
   display: flex;
