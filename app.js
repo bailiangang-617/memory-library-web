@@ -253,7 +253,7 @@ function bgmEntry() {
 }
 
 function defaultBgmUrl() {
-  return "./bgm-zi.mp3?v=20260911av"
+  return "./bgm-zi.mp3?v=20260911aw"
 }
 
 function bgmUrl() {
@@ -869,22 +869,35 @@ function taleExcerpt(text) {
   return `${raw.slice(0, 78)}…`
 }
 
-function taleScenes(book) {
-  return usYearGroups(bookEntries())
+function shuffleList(list) {
+  const out = list.slice()
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const hold = out[i]
+    out[i] = out[j]
+    out[j] = hold
+  }
+  return out
+}
+
+function taleScenes() {
+  const days = usYearGroups(bookEntries())
     .flatMap((block) => block.seasons.flatMap((season) => season.days))
     .filter((day) => dayMedia(day).length)
-    .slice(0, 4)
-    .map((day) => {
-      const titled = day.entries.find((item) => prettyTitle(item)) || day.entries[0]
-      const body = day.entries.map((item) => item.body).find((item) => item && item.trim()) || ""
-      return {
-        date: formatDay(day.at),
-        title: prettyTitle(titled),
-        body: taleExcerpt(body),
-        file: dayMedia(day)[0].file,
-        day: day.key
-      }
-    })
+  if (!days.length) return []
+  const want = Math.min(days.length, 8 + Math.floor(Math.random() * 5))
+  return shuffleList(days).slice(0, want).map((day) => {
+    const media = dayMedia(day)
+    const titled = day.entries.find((item) => prettyTitle(item)) || day.entries[0]
+    const body = day.entries.map((item) => item.body).find((item) => item && item.trim()) || ""
+    return {
+      date: formatDay(day.at),
+      title: prettyTitle(titled),
+      body: taleExcerpt(body),
+      file: media[Math.floor(Math.random() * media.length)].file,
+      day: day.key
+    }
+  })
 }
 
 function stopTaleTimer() {
@@ -1933,13 +1946,14 @@ function switchTab(tab) {
   stopTaleTimer()
   closeSheet()
   if (tab !== "add") clearDraft()
+  const from = state.tab
   state.tab = tab
   state.view = null
   state.dayKey = ""
   state.fileId = ""
   state.slide = 0
   if (tab === "us") state.about = "us"
-  if (tab === "us") beginTale(tab)
+  if (tab === "us") beginTale(tab, from === "door")
   else state.tale = { book: "", phase: "wall", index: 0, scenes: [] }
   render()
 }
