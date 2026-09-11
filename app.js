@@ -3,9 +3,7 @@ const DB_NAME = "our-moments-v1"
 
 const KINDS = [
   { type: "photo", label: "照片集" },
-  { type: "chat", label: "聊天" },
-  { type: "letter", label: "电子信" },
-  { type: "note", label: "一句话" }
+  { type: "letter", label: "电子信" }
 ]
 
 const MONTHS = ["正月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"]
@@ -47,6 +45,8 @@ function uid(prefix) {
 
 function kindLabel(type) {
   if (type === "video") return "照片集"
+  if (type === "chat") return "聊天"
+  if (type === "note") return "一句话"
   return (KINDS.find((item) => item.type === type) || {}).label || type
 }
 
@@ -750,7 +750,7 @@ function renderUs() {
 }
 
 function renderAdd() {
-  if (state.compose === "video") state.compose = "photo"
+  if (state.compose === "video" || state.compose === "chat" || state.compose === "note") state.compose = "photo"
   if (state.about === "her" && state.compose !== "photo") state.compose = "photo"
   const type = state.compose
   const kinds = state.about === "her" ? KINDS.filter((item) => item.type === "photo") : KINDS
@@ -766,8 +766,7 @@ function renderAdd() {
     <section class="card form">
       <input id="f-title" class="input" placeholder="${titlePlaceholder(type)}" value="${escapeHtml(state.draftTitle || "")}" />
       <input id="f-when" class="input" type="datetime-local" value="${escapeHtml(state.draftWhen || toDatetimeLocal(Date.now()))}" />
-      <textarea id="f-body" placeholder="${type === "chat" ? "把想留下的那几句贴进来。" : type === "photo" ? "写给这一组的话，点开墙会显示在右边。" : type === "letter" ? "想在信旁边写一句也可以。" : "想在旁边写一句吗？也可以不写。"}">${escapeHtml(state.draftBody || "")}</textarea>
-      ${type === "chat" ? `<label class="btn ghost file-btn">从导出的对话读入<input id="f-chatfile" type="file" accept=".txt,.html,.htm,text/plain,text/html" /></label>` : ""}
+      <textarea id="f-body" placeholder="${type === "photo" ? "写给这一组的话，点开墙会显示在右边。" : "想在信旁边写一句也可以。"}">${escapeHtml(state.draftBody || "")}</textarea>
       ${type === "photo" ? `<label class="btn ghost file-btn">${state.draftFiles.length ? "再放入照片或视频" : "放入照片或视频"}<input id="f-files" type="file" accept="image/*,video/*" multiple /></label>` : ""}
       ${type === "letter" ? `
         <div class="row-btns">
@@ -775,19 +774,16 @@ function renderAdd() {
           <label class="btn ghost file-btn">放入照片、Word 或 PDF<input id="f-files" type="file" accept="${letterAccept}" multiple /></label>
         </div>
       ` : ""}
-      ${type === "photo" ? draftPreviewHtml("照片和视频可以放在同一组，墙上只占一格。") : ""}
-      ${type === "letter" ? draftPreviewHtml("可拍多页手写，也可放入 Word、PDF。") : ""}
-      ${type !== "photo" && type !== "letter" ? `<p id="f-picked" class="muted"></p>` : ""}
+      ${type === "photo" ? draftPreviewHtml("照片和视频可以放在同一组，墙上只占一格。") : draftPreviewHtml("可拍多页手写，也可放入 Word、PDF。")}
       <button class="btn primary" id="f-save" type="button">放进${state.about === "her" ? "她的册子" : "我们的册子"}</button>
     </section>
   `
 }
 
 function titlePlaceholder(type) {
-  if (type === "chat") return "可以写一个名字，比如 那天晚上"
   if (type === "photo") return "这一组，想叫它什么"
   if (type === "letter") return "这封信，想叫它什么"
-  return "比如 在一起的某一天"
+  return "这一组，想叫它什么"
 }
 
 function renderMine() {
@@ -1259,8 +1255,6 @@ async function saveCompose() {
   if (type === "photo" || type === "letter" || type === "video") {
     files = await filesFromInput(state.draftFiles)
   }
-  if (type === "chat" && !body) return alert("请贴上想留下的那几句")
-  if (type === "note" && !body) return alert("请写一句想记住的话")
   if ((type === "photo" || type === "letter") && !files.length) {
     return alert(type === "letter" ? "请先拍下或放入这封信" : "请先放入照片或视频")
   }
