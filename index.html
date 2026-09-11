@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>给紫钦</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="./styles.css?v=20260911w" />
+</head>
+<body>
+  <div id="backdrop" class="backdrop hidden" aria-hidden="true">
+    <img id="backdrop-img" alt="" />
+  </div>
+  <div id="gate" class="gate">
+    <div class="gate-card">
+      <p class="kicker">给她的册子</p>
+      <div class="flourish" aria-hidden="true"><span></span></div>
+      <h1>贺紫钦</h1>
+      <p class="gate-desc">把想留给紫钦的照片、视频、对话和信，轻轻放在这里。</p>
+      <input id="gate-input" class="input" type="password" placeholder="只有我们知道的口令" autocomplete="off" />
+      <button id="gate-btn" class="btn primary" type="button">打开</button>
+      <p id="gate-error" class="error hidden">口令不对</p>
+    </div>
+  </div>
+
+  <div id="app" class="app hidden">
+    <header class="top">
+      <div>
+        <h1 id="page-title">贺紫钦</h1>
+        <p id="page-sub" class="sub">与你的日子</p>
+      </div>
+    </header>
+    <main id="main"></main>
+    <nav class="tabbar">
+      <button data-tab="her" class="tab" type="button">紫钦</button>
+      <button data-tab="us" class="tab" type="button">我们</button>
+      <button data-tab="add" class="tab" type="button">写下</button>
+    </nav>
+  </div>
+  <div id="sheet" class="sheet hidden"></div>
+  <script src="./cloud-config.js?v=20260911w"></script>
+  <script src="./cloud.js?v=20260911w"></script>
+  <script src="./app.js?v=20260911w"></script>
+</body>
+</html>
