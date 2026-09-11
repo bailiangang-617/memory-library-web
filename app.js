@@ -694,7 +694,7 @@ function render() {
   const titles = {
     door: ["贺紫钦", "二月十七，往后都是"],
     her: ["紫钦", "灯下的样子"],
-    us: ["我们", "从那一顿火锅说起"],
+    us: ["我们", "从那一日的巧合说起"],
     add: ["写下", "把那天再放进来"]
   }
   if (!canWrite() && state.tab === "add") state.tab = "door"
@@ -733,7 +733,7 @@ function renderDoor() {
         <p class="cover-mark">写给贺紫钦</p>
         <h2 class="cover-name">贺紫钦</h2>
         <div class="flourish" aria-hidden="true"><span></span></div>
-        <p class="cover-line">火锅的热气还在，花已经开过一季</p>
+        <p class="cover-line">初见的灯还亮着，花已经开过一季</p>
       </div>
     </section>
     <div class="doors">
@@ -986,7 +986,7 @@ function renderTale() {
         <p class="cover-mark">${her ? "先看她" : "先看我们"}</p>
         <h2 class="cover-name">${her ? "紫钦" : "我们"}</h2>
         <div class="flourish" aria-hidden="true"><span></span></div>
-        <p class="cover-line">${her ? "二月十七以后，她的样子便常常回来。" : "火锅起，年里四面，隔水说话。"}</p>
+        <p class="cover-line">${her ? "二月十七以后，她的样子便常常回来。" : "一场巧遇起，年里四面，隔水说话。"}</p>
         <p class="tale-guide">${her
           ? "先看最近的几页。灯下的侧脸，广州的风，后来又见的几次。看完，整面墙交给你。"
           : "四月十九，人到广州，花递过去，话也落了地。先把最近走过的慢慢看一遍，再让日子自己往前流。"}</p>
@@ -1335,7 +1335,7 @@ function renderUs() {
       <button class="cover-name" data-tab="door" type="button">我们</button>
       ${days.length ? `<button class="link quiet" data-act="replay-tale" type="button">从头看</button>` : ""}
     </section>
-    ${days.length ? wallHtml(days, capsuleHtml) : `<div class="empty"><p>从那顿火锅写起，也好。</p></div>`}
+    ${days.length ? wallHtml(days, capsuleHtml) : `<div class="empty"><p>从初见那一日写起，也好。</p></div>`}
   `
   bindWalls()
 }
