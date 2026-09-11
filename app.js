@@ -877,7 +877,7 @@ function taleGo() {
 
 function taleHold(scene) {
   const n = String(scene?.body || "").length
-  return Math.min(9800, Math.max(6800, 4800 + n * 36))
+  return Math.min(6200, Math.max(3800, 3000 + n * 22))
 }
 
 function taleMediaHtml(scene) {
@@ -952,7 +952,7 @@ function showTaleScene() {
     incoming.addEventListener("ended", () => {
       if (state.tale.phase === "play") taleNext()
     }, { once: true })
-    scheduleTale(10000, taleNext)
+    scheduleTale(7000, taleNext)
     return
   }
   scheduleTale(hold, taleNext)
