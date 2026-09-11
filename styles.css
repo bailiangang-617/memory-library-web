@@ -30,28 +30,42 @@ body {
   left: 0;
   right: 0;
   top: 0;
-  height: min(58vh, 560px);
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
 }
 .backdrop img {
   display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 28%;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: min(68vh, 640px);
+  object-fit: contain;
+  object-position: center top;
 }
 .backdrop::after {
   content: "";
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(243, 238, 246, 0.18) 0%, rgba(243, 238, 246, 0.42) 42%, var(--bg) 88%, var(--bg) 100%),
-    linear-gradient(90deg, rgba(243, 238, 246, 0.28), transparent 22%, transparent 78%, rgba(243, 238, 246, 0.28));
+    linear-gradient(180deg, rgba(243, 238, 246, 0.58) 0%, rgba(243, 238, 246, 0.66) 38%, rgba(243, 238, 246, 0.82) 72%, var(--bg) 100%),
+    linear-gradient(90deg, var(--bg), transparent 18%, transparent 82%, var(--bg));
 }
 body.has-backdrop {
   background-image: none;
+}
+body.has-backdrop .cover-name,
+body.has-backdrop .cover-mark,
+body.has-backdrop .cover-line,
+body.has-backdrop .top h1,
+body.has-backdrop .sub {
+  text-shadow:
+    0 0 10px var(--bg),
+    0 1px 14px var(--bg),
+    0 0 28px rgba(243, 238, 246, 0.95);
 }
 .gate, .app { position: relative; z-index: 1; }
 
