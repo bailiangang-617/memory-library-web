@@ -253,7 +253,7 @@ function bgmEntry() {
 }
 
 function defaultBgmUrl() {
-  return "./bgm-zi.mp3?v=20260912b"
+  return "./bgm-zi.mp3?v=20260912c"
 }
 
 function bgmUrl() {
@@ -1096,6 +1096,25 @@ const INTRO_LETTERS = [
   }
 ]
 
+const WALL_LINES = [
+  "从你递来的第一张照片起，花也买过，信也写过。分别的时候，还是说不完那句不舍。",
+  "紫色戴在你手上，墙纸还是你。爱情大概就是这样，把一个人慢慢过成了日子。",
+  "表白那天的花还在。后来有过退票，有过沉默，可我回头看，路上仍全是你。",
+  "你来上海的风，吹过衣角。我想见你的心，比那一阵风更急，也更软。",
+  "你下厨的那天，糖醋排骨还热着。我才懂，和你过的每一天，都值得留下来。",
+  "伴手礼你买得很开心，我却在旁边悄悄吃醋。不是小气，是舍不得你看别处太久。",
+  "手信是一字一句的真心。千山万水走过来，站在这面墙前的，还是我们。",
+  "其实很爱。不是一声惊雷，是这些页里，一次又一次把你放回心口。"
+]
+
+function pickWallLine() {
+  const last = Number(sessionStorage.getItem("om_wall_n"))
+  let i = Math.floor(Math.random() * WALL_LINES.length)
+  if (WALL_LINES.length > 1 && i === last) i = (i + 1) % WALL_LINES.length
+  sessionStorage.setItem("om_wall_n", String(i))
+  return WALL_LINES[i]
+}
+
 function pickIntroLetter() {
   const last = Number(sessionStorage.getItem("om_intro_n"))
   let i = Math.floor(Math.random() * INTRO_LETTERS.length)
@@ -1458,11 +1477,12 @@ function renderUs() {
   const days = usYearGroups(bookEntries()).flatMap((block) => block.seasons.flatMap((season) => season.days))
   $("main").innerHTML = `
     <section class="book-head">
-      <button class="cover-mark" data-tab="door" type="button">回到封面</button>
-      <h2 class="cover-name">我们</h2>
-      <div class="flourish slim" aria-hidden="true"><span></span></div>
-      <p class="cover-line">从第一张照片起，到分别时的不舍。</p>
-      ${days.length ? `<button class="link quiet" data-act="replay-tale" type="button">从头看</button>` : ""}
+      <div class="book-head-nav">
+        <button class="cover-mark" data-tab="door" type="button">封面</button>
+        <h2 class="cover-name">我们</h2>
+        ${days.length ? `<button class="link quiet" data-act="replay-tale" type="button">从头看</button>` : `<span></span>`}
+      </div>
+      <p class="cover-line">${escapeHtml(pickWallLine())}</p>
     </section>
     ${days.length ? wallHtml(days, capsuleHtml) : `<div class="empty"><p>从初见那一日写起，也好。</p></div>`}
   `

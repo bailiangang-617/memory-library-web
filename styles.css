@@ -187,8 +187,7 @@ body.has-backdrop .cover-title {
   background: radial-gradient(ellipse at 50% 36%, rgba(255, 250, 253, 0.94), rgba(243, 238, 246, 0.7) 58%, rgba(243, 238, 246, 0.18) 100%);
 }
 body.has-backdrop .book-head {
-  background: linear-gradient(180deg, rgba(255, 250, 253, 0.9), rgba(255, 250, 253, 0.42) 72%, transparent);
-  border-radius: 0 0 24px 24px;
+  background: none;
 }
 body.has-backdrop .cover-mark,
 body.has-backdrop .book-head .cover-mark,
@@ -202,10 +201,15 @@ body.has-backdrop .tale-intro .cover-name {
   color: #2c2236;
   text-shadow: 0 1px 0 rgba(255, 250, 253, 0.96), 0 0 18px rgba(255, 250, 253, 0.8);
 }
-body.has-backdrop .cover-line,
-body.has-backdrop .book-head .cover-line {
+body.has-backdrop .cover-line {
   color: #53405f;
   text-shadow: 0 1px 0 rgba(255, 250, 253, 0.94), 0 0 14px rgba(255, 250, 253, 0.75);
+}
+body.has-backdrop .book-head .cover-mark,
+body.has-backdrop .book-head .cover-name,
+body.has-backdrop .book-head .cover-line,
+body.has-backdrop .book-head .link {
+  text-shadow: 0 1px 8px rgba(255, 250, 253, 0.55);
 }
 @keyframes cover-rise {
   from { opacity: 0; transform: translateY(10px); }
@@ -566,27 +570,39 @@ body.is-view .tabbar { display: none; }
 
 .book-head {
   text-align: center;
-  padding: 22px 8px 8px;
+  padding: 8px 16px 2px;
 }
-.book-head .link.quiet {
-  display: block;
-  margin: 10px auto 0;
-  font-size: 12px;
+.book-head-nav {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+.book-head-nav .cover-mark {
+  justify-self: start;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+}
+.book-head-nav .link.quiet {
+  justify-self: end;
+  margin: 0;
+  font-size: 11px;
 }
 .book-head .cover-name {
-  margin: 6px 0 0;
-  font-size: 26px;
-  letter-spacing: 0.28em;
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0.2em;
   color: var(--ink);
   background: none;
   border: 0;
   padding: 0;
 }
 .book-head .cover-line {
-  margin-top: 8px;
-  max-width: 22em;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 8px auto 0;
+  max-width: 28em;
+  font-size: 13px;
+  line-height: 1.75;
+  letter-spacing: 0.04em;
 }
 
 .wall {
@@ -594,7 +610,7 @@ body.is-view .tabbar { display: none; }
   flex-direction: column;
   gap: 10px;
   overflow: hidden;
-  margin: 28px 0 0;
+  margin: 16px 0 0;
   padding: 10px 0 8px;
   mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
