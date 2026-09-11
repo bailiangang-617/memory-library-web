@@ -670,6 +670,7 @@ function render() {
     add: ["写下", "先选这是紫钦，还是我们"]
   }
   $("app")?.classList.toggle("is-book", state.tab !== "add")
+  $("app")?.classList.toggle("is-remember", state.tab === "her" || state.tab === "us")
   document.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("on", btn.dataset.tab === state.tab))
   $("page-title").textContent = titles[state.tab][0]
   $("page-sub").textContent = titles[state.tab][1]
@@ -679,12 +680,11 @@ function render() {
   return renderDoor()
 }
 
-function doorHtml(who, kicker, name, line) {
+function doorHtml(who, name, line) {
   const photo = coverPhoto(who)
   return `<button class="door ${photo ? "has-film" : ""}" data-tab="${who}" type="button">
     ${photo ? `<i class="door-film"><img src="${fileUrl(photo)}" alt="" /></i>` : ""}
     <span class="door-copy">
-      <span class="door-kicker">${kicker}</span>
       <strong>${name}</strong>
       <em>${line}</em>
     </span>
@@ -702,8 +702,8 @@ function renderDoor() {
       </div>
     </section>
     <div class="doors">
-      ${doorHtml("her", "第一本", "看她", "她的样子")}
-      ${doorHtml("us", "第二本", "看我们", "一起走过的日子")}
+      ${doorHtml("her", "看她", "她的样子")}
+      ${doorHtml("us", "看我们", "一起走过的日子")}
     </div>
     ${state.entries.some(isTrial) ? `<p class="sub" style="text-align:center;margin-top:22px"><button class="link" data-act="clear-demo" type="button">清掉试片</button></p>` : ""}
   `
@@ -729,14 +729,10 @@ function thumbMedia(file, count) {
 }
 
 function polaroidHtml(card) {
-  const title = prettyTitle(card.entry)
   return `<button class="polaroid" data-open="${card.entry.id}" type="button">
     <span class="film">
       ${thumbMedia(card.cover, card.count)}
-      <span class="film-cap">
-        <i>${formatDay(card.entry.happenedAt)}</i>
-        ${title ? `<b>${escapeHtml(title)}</b>` : ""}
-      </span>
+      <span class="film-cap"><i>${formatDay(card.entry.happenedAt)}</i></span>
     </span>
   </button>`
 }
@@ -769,29 +765,21 @@ function renderHer() {
   const cards = herCards()
   $("main").innerHTML = `
     <section class="book-head">
-      <button class="cover-mark" data-tab="door" type="button">回到封面</button>
-      <h2 class="cover-name">紫钦</h2>
-      <div class="flourish slim" aria-hidden="true"><span></span></div>
-      <p class="cover-line">她的样子，慢慢走过来</p>
+      <button class="cover-name" data-tab="door" type="button">紫钦</button>
     </section>
-    ${cards.length ? wallHtml(cards, polaroidHtml) : `<div class="empty"><p>还没把她的样子放进来。</p></div>`}
+    ${cards.length ? wallHtml(cards, polaroidHtml) : `<div class="empty"><p>她的样子，还在来的路上。</p></div>`}
   `
   bindWalls()
 }
 
 function capsuleHtml(day) {
   const media = dayMedia(day)
-  const first = day.entries[0]
-  const title = prettyTitle(day.entries.find((item) => prettyTitle(item)) || first)
   const letter = media.length === 0
   const cover = media[0]
   return `<button class="capsule ${letter ? "is-letter" : ""}" data-day="${day.key}" type="button">
     <span class="film">
       ${thumbMedia(cover && cover.file, media.length)}
-      <span class="film-cap">
-        <i>${formatDay(day.at)}</i>
-        ${title ? `<b>${escapeHtml(title)}</b>` : ""}
-      </span>
+      <span class="film-cap"><i>${formatDay(day.at)}</i></span>
     </span>
   </button>`
 }
@@ -812,7 +800,7 @@ function albumWords(entries) {
       ${body ? `<p>${escapeHtml(body)}</p>` : ""}
     </section>`
   }).join("")
-  return blocks || `<p class="muted">还没写下字。</p>`
+  return blocks
 }
 
 function albumIndex() {
@@ -832,7 +820,7 @@ function albumMedia(file, className) {
 
 function albumStageHtml() {
   const gallery = state.sheetGallery
-  if (!gallery.length) return `<p class="muted sheet-empty">这一组还没有照片。</p>`
+  if (!gallery.length) return `<p class="muted sheet-empty">这一天，只留下了字。</p>`
   const index = albumIndex()
   state.slide = index
   const tile = gallery[index]
@@ -844,7 +832,6 @@ function albumStageHtml() {
       ${gallery.length > 1 ? `
         <button class="sheet-nav prev" data-album-step="-1" type="button">‹</button>
         <button class="sheet-nav next" data-album-step="1" type="button">›</button>
-        <p class="sheet-page">${index + 1} / ${gallery.length}</p>
         <div class="sheet-dots">${gallery.map((_, i) => `<i class="${i === index ? "on" : ""}"></i>`).join("")}</div>
       ` : ""}
     </div>
@@ -927,7 +914,7 @@ function openPeek(index) {
   const file = tile.file
   peek.classList.remove("hidden")
   peek.innerHTML = `
-    <button class="peek-close" data-act="close-peek" type="button">关闭</button>
+    <button class="peek-close" data-act="close-peek" type="button">合上</button>
     ${file.mime.startsWith("video/")
       ? `<video class="peek-media" src="${fileUrl(file)}" controls playsinline autoplay></video>`
       : `<img class="peek-media" src="${fileUrl(file)}" alt="" />`}
@@ -962,9 +949,16 @@ function openSheet({ title, date, gallery, entries, deleteId }) {
       <div class="sheet-top">
         <div>
           <p class="sheet-date">${escapeHtml(date)}</p>
-          <h2>${escapeHtml(title)}</h2>
+          ${title ? `<h2>${escapeHtml(title)}</h2>` : ""}
         </div>
-        <button class="link" data-act="close-sheet" type="button">关闭</button>
+        <div class="sheet-tools">
+          <button class="link quiet" data-act="toggle-more" type="button">···</button>
+          <button class="link quiet" data-act="close-sheet" type="button">合上</button>
+        </div>
+      </div>
+      <div class="sheet-more hidden" id="sheet-more">
+        <button class="link" data-act="use-backdrop" type="button">用作背景</button>
+        ${deleteId ? `<button class="link danger-link" data-act="delete" data-id="${deleteId}" type="button">删去这一页</button>` : ""}
       </div>
       <div class="sheet-split">
         <aside class="sheet-photos" id="sheet-photos">${albumStageHtml()}</aside>
@@ -972,10 +966,6 @@ function openSheet({ title, date, gallery, entries, deleteId }) {
           ${albumWords(entries)}
           ${entries.map((entry) => fileDocs(entry.files)).join("")}
         </article>
-      </div>
-      <div class="sheet-actions">
-        <button class="btn ghost" data-act="use-backdrop" type="button">用作背景</button>
-        ${deleteId ? `<button class="btn danger" data-act="delete" data-id="${deleteId}" type="button">删除这一组</button>` : ""}
       </div>
     </div>
     <div id="peek" class="peek hidden"></div>
@@ -990,7 +980,7 @@ function openEntrySheet(id) {
   state.view = id
   state.dayKey = ""
   openSheet({
-    title: prettyTitle(entry) || (inferWho(entry) === "her" ? "这一组" : "这个故事"),
+    title: prettyTitle(entry),
     date: formatDay(entry.happenedAt),
     gallery: mediaFiles(entry).map((file) => ({ entry, file })),
     entries: [entry],
@@ -1005,7 +995,7 @@ function openDaySheet(key) {
   state.view = null
   const titled = day.entries.find((item) => prettyTitle(item))
   openSheet({
-    title: prettyTitle(titled || day.entries[0]) || "那天",
+    title: prettyTitle(titled || day.entries[0]),
     date: formatDay(day.at),
     gallery: dayMedia(day),
     entries: day.entries,
@@ -1017,12 +1007,9 @@ function renderUs() {
   const days = usYearGroups(bookEntries("us")).flatMap((block) => block.seasons.flatMap((season) => season.days))
   $("main").innerHTML = `
     <section class="book-head">
-      <button class="cover-mark" data-tab="door" type="button">回到封面</button>
-      <h2 class="cover-name">我们</h2>
-      <div class="flourish slim" aria-hidden="true"><span></span></div>
-      <p class="cover-line">那些一起走过的日子</p>
+      <button class="cover-name" data-tab="door" type="button">我们</button>
     </section>
-    ${days.length ? wallHtml(days, capsuleHtml) : `<div class="empty"><p>还没把那天写进来。</p></div>`}
+    ${days.length ? wallHtml(days, capsuleHtml) : `<div class="empty"><p>那些日子，还在来的路上。</p></div>`}
   `
   bindWalls()
 }
@@ -1210,7 +1197,7 @@ function renderDayLook(key) {
   const titled = day.entries.find((item) => prettyTitle(item))
   state.slide = Math.min(state.slide, Math.max(gallery.length - 1, 0))
   renderLookPage({
-    title: prettyTitle(titled || day.entries[0]) || "那天",
+    title: prettyTitle(titled || day.entries[0]),
     date: formatDay(day.at),
     words,
     gallery,
@@ -1275,7 +1262,7 @@ function fillTrackSet(track) {
 
 function syncTrackMotion(track) {
   const width = fillTrackSet(track) || 480
-  track.style.setProperty("--wall-dur", `${Math.max(7, width / 62)}s`)
+  track.style.setProperty("--wall-dur", `${Math.max(12, width / 42)}s`)
 }
 
 function bindWalls() {
@@ -1457,6 +1444,10 @@ function onSheetClick(event) {
       return
     }
     openPeek(Number(peekBtn.dataset.peek))
+    return
+  }
+  if (event.target.closest("[data-act='toggle-more']")) {
+    $("sheet-more")?.classList.toggle("hidden")
     return
   }
   if (event.target.id === "sheet" || event.target.closest("[data-act='close-sheet']")) {
