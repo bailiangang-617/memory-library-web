@@ -223,7 +223,7 @@ function dayKey(ts) {
 
 function latestBookYear() {
   if (state.tab === "her") {
-    const first = groupByYear(herTiles())[0]
+    const first = groupByYear(herCards())[0]
     return first && first.year
   }
   const first = usYearGroups(bookEntries("us"))[0]
@@ -235,22 +235,21 @@ function isYearOpen(year) {
   return year === latestBookYear()
 }
 
-function herTiles() {
-  const tiles = []
-  for (const entry of bookEntries("her")) {
-    for (const file of mediaFiles(entry)) {
-      tiles.push({ entry, file, year: entryYear(entry) })
-    }
-  }
-  return tiles
+function herCards() {
+  return bookEntries("her").map((entry) => ({
+    entry,
+    year: entryYear(entry),
+    cover: mediaFiles(entry)[0] || null,
+    count: mediaFiles(entry).length
+  }))
 }
 
-function groupByYear(tiles) {
+function groupByYear(cards) {
   const years = []
-  for (const tile of tiles) {
+  for (const card of cards) {
     const last = years[years.length - 1]
-    if (!last || last.year !== tile.year) years.push({ year: tile.year, items: [tile] })
-    else last.items.push(tile)
+    if (!last || last.year !== card.year) years.push({ year: card.year, items: [card] })
+    else last.items.push(card)
   }
   return years
 }
@@ -393,58 +392,52 @@ function yearFold(year, count, unit) {
   </button>`
 }
 
-function polaroidHtml(tile, index) {
-  const video = tile.file.mime.startsWith("video/")
-  return `<button class="polaroid" data-open="${tile.entry.id}" data-file="${tile.file.id || ""}" data-slide="${index}" type="button">
-    <span class="polaroid-media">
-      ${video
-        ? `<video src="${fileUrl(tile.file)}" muted playsinline preload="metadata"></video><i class="play-dot" aria-hidden="true"></i>`
-        : `<img src="${fileUrl(tile.file)}" alt="" loading="lazy" />`}
-    </span>
-    <span>${formatDay(tile.entry.happenedAt)}</span>
-    <i class="linger-hint">停一停，再打开</i>
+function thumbMedia(file, count) {
+  if (!file) return `<span class="thumb-empty">字</span>`
+  const video = file.mime.startsWith("video/")
+  return `<span class="thumb">
+    ${video
+      ? `<video src="${fileUrl(file)}" muted playsinline preload="metadata"></video><i class="play-dot" aria-hidden="true"></i>`
+      : `<img src="${fileUrl(file)}" alt="" loading="lazy" />`}
+    ${count > 1 ? `<i class="thumb-count">${count}</i>` : ""}
+  </span>`
+}
+
+function polaroidHtml(card) {
+  return `<button class="polaroid" data-open="${card.entry.id}" type="button">
+    ${thumbMedia(card.cover, card.count)}
+    <span>${formatDay(card.entry.happenedAt)}</span>
   </button>`
 }
 
 function renderHer() {
-  const tiles = herTiles()
-  const years = groupByYear(tiles)
-  let offset = 0
+  const cards = herCards()
+  const years = groupByYear(cards)
   $("main").innerHTML = `
     <section class="book-head">
       <button class="cover-mark" data-tab="door" type="button">回到封面</button>
       <h2 class="cover-name">紫钦</h2>
-      <div class="flourish" aria-hidden="true"><span></span></div>
+      <p class="cover-line">左右滑着看，点开才是一张</p>
     </section>
-    ${tiles.length ? years.map((block) => {
-      const start = offset
-      offset += block.items.length
+    ${cards.length ? years.map((block) => {
       const open = isYearOpen(block.year)
-      return `${yearFold(block.year, block.items.length, "张")}
-        ${open ? `<div class="wall">${block.items.map((tile, i) => polaroidHtml(tile, start + i)).join("")}</div>` : ""}`
+      return `${yearFold(block.year, block.items.length, "组")}
+        ${open ? `<div class="reel-wrap"><div class="reel" data-reel>${block.items.map(polaroidHtml).join("")}</div></div>` : ""}`
     }).join("") : `<div class="empty"><p>还没把她的样子放进来。</p></div>`}
   `
-  updateLinger()
+  bindReels()
 }
 
 function capsuleHtml(day) {
   const media = dayMedia(day)
   const first = day.entries[0]
   const title = prettyTitle(day.entries.find((item) => prettyTitle(item)) || first)
-  const body = day.entries.map((item) => item.body).find(Boolean) || ""
   const letter = media.length === 0
-  const count = media.length
   const cover = media[0]
-  return `<button class="capsule ${letter ? "letter-leaf leaf" : "leaf"}" data-day="${day.key}" type="button">
-    ${cover && cover.file.mime.startsWith("image/") ? `<img class="leaf-photo" src="${fileUrl(cover.file)}" alt="" loading="lazy" />` : ""}
-    ${cover && cover.file.mime.startsWith("video/") ? `<video class="leaf-video" src="${fileUrl(cover.file)}" muted playsinline preload="metadata"></video>` : ""}
-    ${count > 1 ? `<span class="capsule-count">${count} 张</span>` : ""}
-    <div class="leaf-meta">
-      <p class="leaf-date">${formatDay(day.at)}</p>
-      ${title ? `<h3>${escapeHtml(title)}</h3>` : ""}
-      ${body && !title ? `<div class="excerpt">${escapeHtml(body)}</div>` : ""}
-      <i class="linger-hint">停在这一天</i>
-    </div>
+  return `<button class="capsule ${letter ? "is-letter" : ""}" data-day="${day.key}" type="button">
+    ${thumbMedia(cover && cover.file, media.length)}
+    <span>${formatDay(day.at)}</span>
+    ${title ? `<b>${escapeHtml(title)}</b>` : ""}
   </button>`
 }
 
@@ -454,7 +447,7 @@ function renderUs() {
     <section class="book-head">
       <button class="cover-mark" data-tab="door" type="button">回到封面</button>
       <h2 class="cover-name">我们</h2>
-      <div class="flourish" aria-hidden="true"><span></span></div>
+      <p class="cover-line">左右滑着看，点开才是那天</p>
     </section>
     ${years.length ? years.map((block) => {
       const count = block.seasons.reduce((sum, season) => sum + season.days.length, 0)
@@ -462,11 +455,11 @@ function renderUs() {
       return `${yearFold(block.year, count, "天")}
         ${open ? block.seasons.map((season) => `
           <div class="chapter">${season.label}</div>
-          <div class="capsule-row">${season.days.map(capsuleHtml).join("")}</div>
+          <div class="reel-wrap"><div class="reel" data-reel>${season.days.map(capsuleHtml).join("")}</div></div>
         `).join("") : ""}`
     }).join("") : `<div class="empty"><p>还没把那天写进来。</p></div>`}
   `
-  updateLinger()
+  bindReels()
 }
 
 function renderAdd() {
@@ -529,6 +522,17 @@ function renderMine() {
   `
 }
 
+function lookThumbs(gallery, index) {
+  if (gallery.length < 2) return ""
+  return `<div class="look-thumbs">${gallery.map((tile, i) => `
+    <button class="look-thumb ${i === index ? "on" : ""}" data-slide-to="${i}" type="button">
+      ${tile.file.mime.startsWith("video/")
+        ? `<video src="${fileUrl(tile.file)}" muted playsinline preload="metadata"></video>`
+        : `<img src="${fileUrl(tile.file)}" alt="" />`}
+    </button>`).join("")}</div>
+    <p class="look-count">${index + 1} / ${gallery.length}</p>`
+}
+
 function lookStage(gallery) {
   const index = Math.max(0, Math.min(state.slide, gallery.length - 1))
   state.slide = index
@@ -545,7 +549,7 @@ function lookStage(gallery) {
       </div>
       ${gallery.length > 1 ? `<button class="look-nav next" data-slide-step="1" type="button">›</button>` : ""}
     </div>
-    ${gallery.length > 1 ? `<p class="look-count">${index + 1} / ${gallery.length}</p>` : ""}
+    ${lookThumbs(gallery, index)}
   `
 }
 
@@ -554,8 +558,8 @@ function renderLookPage({ title, date, words, gallery, docs, deleteId }) {
   $("page-sub").textContent = date
   $("main").innerHTML = `
     <div class="flourish" aria-hidden="true"><span></span></div>
-    ${words}
     ${gallery.length ? lookStage(gallery) : ""}
+    ${words}
     ${docs}
     <div class="row-btns" style="margin-top:16px">
       <button class="btn plain" data-act="back" type="button">返回</button>
@@ -591,18 +595,19 @@ function renderDetail(id) {
     return render()
   }
   if (inferWho(entry) === "her") {
-    const gallery = herTiles()
-    let index = gallery.findIndex((tile) => tile.entry.id === id && (!state.fileId || tile.file.id === state.fileId))
-    if (index < 0) index = gallery.findIndex((tile) => tile.entry.id === id)
-    state.slide = index < 0 ? 0 : index
-    const current = gallery[state.slide] || { entry }
+    const gallery = mediaFiles(entry).map((file) => ({ entry, file }))
+    if (state.fileId) {
+      const found = gallery.findIndex((tile) => tile.file.id === state.fileId)
+      if (found >= 0) state.slide = found
+    }
+    state.slide = Math.min(state.slide, Math.max(gallery.length - 1, 0))
     renderLookPage({
-      title: prettyTitle(current.entry) || "紫钦",
-      date: formatDay(current.entry.happenedAt),
-      words: current.entry.body ? `<section class="letter-sheet">${escapeHtml(current.entry.body)}</section>` : "",
+      title: prettyTitle(entry) || "紫钦",
+      date: formatDay(entry.happenedAt),
+      words: entry.body ? `<section class="letter-sheet">${escapeHtml(entry.body)}</section>` : "",
       gallery,
       docs: "",
-      deleteId: current.entry.id
+      deleteId: entry.id
     })
     return
   }
@@ -647,26 +652,36 @@ function isTrial(entry) {
 let lingerWait = 0
 
 function updateLinger() {
-  const items = Array.from(document.querySelectorAll(".polaroid, .capsule"))
-  if (!items.length) return
-  const hovered = items.find((el) => el.matches(":hover"))
-  const mid = window.innerHeight * 0.42
-  let best = hovered || null
-  let bestDist = Infinity
-  if (!hovered) {
-    for (const el of items) {
-      const box = el.getBoundingClientRect()
-      if (box.bottom < 88 || box.top > window.innerHeight - 88) continue
-      const dist = Math.abs((box.top + box.bottom) / 2 - mid)
-      if (dist < bestDist) {
-        bestDist = dist
-        best = el
+  const reels = Array.from(document.querySelectorAll("[data-reel]"))
+  if (!reels.length) return
+  for (const reel of reels) {
+    const items = Array.from(reel.querySelectorAll(".polaroid, .capsule"))
+    if (!items.length) continue
+    const box = reel.getBoundingClientRect()
+    const hovered = items.find((el) => el.matches(":hover"))
+    let best = hovered || null
+    let bestDist = Infinity
+    if (!hovered) {
+      const mid = box.left + box.width * 0.38
+      for (const el of items) {
+        const item = el.getBoundingClientRect()
+        if (item.right < box.left + 6 || item.left > box.right - 6) continue
+        const dist = Math.abs((item.left + item.right) / 2 - mid)
+        if (dist < bestDist) {
+          bestDist = dist
+          best = el
+        }
       }
     }
+    for (const el of items) el.classList.toggle("is-lingering", el === best)
   }
-  for (const el of items) {
-    el.classList.toggle("is-lingering", el === best)
-  }
+}
+
+function bindReels() {
+  document.querySelectorAll("[data-reel]").forEach((reel) => {
+    reel.addEventListener("scroll", () => queueLinger(false), { passive: true })
+  })
+  updateLinger()
 }
 
 function queueLinger(immediate) {
@@ -761,13 +776,17 @@ async function onMainClick(event) {
     render()
     return
   }
+  const jump = event.target.closest("[data-slide-to]")
+  if (jump) {
+    state.slide = Number(jump.dataset.slideTo)
+    render()
+    return
+  }
   const stepBtn = event.target.closest("[data-slide-step]")
   if (stepBtn) {
     const gallery = state.dayKey
       ? dayMedia((usYearGroups(bookEntries("us")).flatMap((block) => block.seasons.flatMap((season) => season.days)).find((item) => item.key === state.dayKey) || { entries: [] }))
-      : inferWho(state.entries.find((item) => item.id === state.view) || {}) === "her"
-        ? herTiles()
-        : mediaFiles(state.entries.find((item) => item.id === state.view) || { files: [] }).map((file) => ({ entry: state.entries.find((item) => item.id === state.view), file }))
+      : mediaFiles(state.entries.find((item) => item.id === state.view) || { files: [] }).map((file) => ({ entry: state.entries.find((item) => item.id === state.view), file }))
     if (!gallery.length) return
     state.slide = (state.slide + Number(stepBtn.dataset.slideStep) + gallery.length) % gallery.length
     const next = gallery[state.slide]

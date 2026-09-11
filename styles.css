@@ -173,9 +173,9 @@ textarea { min-height: 88px; resize: vertical; }
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 22px 4px 10px;
+  margin: 10px 4px 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   letter-spacing: 0.18em;
 }
 .chapter::before,
@@ -349,90 +349,143 @@ textarea { min-height: 88px; resize: vertical; }
 
 .book-head {
   text-align: center;
-  padding: 8px 8px 4px;
+  padding: 2px 8px 0;
 }
-.wall,
-.capsule-row {
-  margin-top: 12px;
-  overflow: visible;
+.book-head .cover-name {
+  margin-top: 4px;
+  font-size: 24px;
+  letter-spacing: 0.24em;
 }
-.wall {
-  column-count: 2;
-  column-gap: 10px;
+.book-head .cover-line {
+  margin-top: 4px;
+  font-size: 12px;
 }
-.capsule-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+
+.reel-wrap {
+  position: relative;
+  margin: 0 -8px;
 }
+.reel-wrap::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 10px;
+  width: 22px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--bg));
+}
+.reel {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 16px;
+  padding: 10px 20px 16px 16px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.reel::-webkit-scrollbar { display: none; }
+
 .polaroid,
 .capsule {
-  transition: transform 0.55s ease, box-shadow 0.55s ease, filter 0.55s ease, opacity 0.55s ease;
-  transform: scale(0.96);
-  filter: saturate(0.82);
-  opacity: 0.86;
-}
-.polaroid {
-  position: relative;
-  display: block;
-  width: 100%;
-  break-inside: avoid;
-  margin: 0 0 12px;
-  padding: 8px 8px 12px;
-  border: 1px solid var(--line);
-  background: var(--surface);
+  flex: 0 0 86px;
+  width: 86px;
+  padding: 0;
+  border: 0;
+  background: none;
   color: inherit;
   text-align: left;
-  box-shadow: 0 8px 20px rgba(86, 58, 102, 0.05);
+  scroll-snap-align: center;
+  transform: scale(0.94);
+  filter: saturate(0.8);
+  opacity: 0.82;
+  transition: transform 0.45s ease, filter 0.45s ease, opacity 0.45s ease;
 }
 .polaroid.is-lingering,
 .capsule.is-lingering {
-  transform: scale(1.045);
+  transform: scale(1.06);
   filter: saturate(1.08);
   opacity: 1;
-  box-shadow: 0 18px 40px rgba(86, 58, 102, 0.2);
-  z-index: 3;
+  z-index: 2;
 }
-.linger-hint {
+.thumb,
+.thumb-empty {
+  position: relative;
   display: block;
-  margin-top: 6px;
-  color: var(--gold);
-  font-size: 11px;
-  font-style: normal;
-  letter-spacing: 0.16em;
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 0.35s ease, transform 0.35s ease;
-}
-.polaroid.is-lingering .linger-hint,
-.capsule.is-lingering .linger-hint {
-  opacity: 1;
-  transform: none;
-}
-.polaroid img,
-.polaroid video {
-  display: block;
-  width: 100%;
-  height: auto;
-  object-fit: contain;
+  width: 86px;
+  height: 86px;
+  border-radius: 8px;
+  overflow: hidden;
   background: #f0e8f4;
 }
-.polaroid span {
+.thumb img,
+.thumb video,
+.look-thumb img,
+.look-thumb video {
   display: block;
-  margin-top: 8px;
-  color: var(--accent-2);
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
-.polaroid-media { position: relative; display: block; }
+.thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    linear-gradient(180deg, rgba(239, 228, 244, 0.85), transparent 70%),
+    var(--surface);
+  border: 1px solid var(--line);
+  color: var(--accent-2);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+}
+.polaroid.is-lingering .thumb,
+.capsule.is-lingering .thumb,
+.polaroid.is-lingering .thumb-empty,
+.capsule.is-lingering .thumb-empty {
+  box-shadow: 0 0 0 1.5px var(--gold), 0 10px 20px rgba(86, 58, 102, 0.16);
+}
+.thumb-count {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  min-width: 16px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(255, 250, 253, 0.92);
+  color: var(--accent);
+  font-size: 10px;
+  font-style: normal;
+  line-height: 16px;
+  text-align: center;
+}
+.polaroid > span,
+.capsule > span {
+  display: block;
+  margin-top: 5px;
+  color: var(--accent-2);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.capsule b {
+  display: block;
+  margin-top: 1px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .play-dot {
   position: absolute;
-  right: 8px;
-  bottom: 8px;
+  right: 6px;
+  bottom: 6px;
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 5px 0 5px 8px;
+  border-width: 4px 0 4px 7px;
   border-color: transparent transparent transparent rgba(255, 250, 253, 0.92);
   filter: drop-shadow(0 1px 2px rgba(44, 34, 54, 0.35));
 }
@@ -442,8 +495,8 @@ textarea { min-height: 88px; resize: vertical; }
   justify-content: space-between;
   align-items: baseline;
   width: 100%;
-  margin: 18px 0 8px;
-  padding: 8px 2px;
+  margin: 12px 0 0;
+  padding: 6px 2px;
   border: 0;
   border-bottom: 1px solid var(--line);
   background: none;
@@ -457,27 +510,26 @@ textarea { min-height: 88px; resize: vertical; }
 .year-fold span { color: var(--muted); font-size: 12px; letter-spacing: 0.08em; }
 .year-fold.on b { color: var(--accent); }
 
-.capsule {
-  position: relative;
-  width: auto;
-  margin-top: 0;
-  overflow: visible;
+.look-thumbs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin-top: 10px;
+  padding-bottom: 2px;
+  scrollbar-width: none;
 }
-.capsule.letter-leaf {
-  min-height: 148px;
-  padding: 16px 12px 12px;
+.look-thumbs::-webkit-scrollbar { display: none; }
+.look-thumb {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f0e8f4;
 }
-.capsule-count {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(255, 250, 253, 0.9);
-  color: var(--accent);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-}
+.look-thumb.on { box-shadow: 0 0 0 1.5px var(--gold); }
 
 .look-stage { position: relative; }
 .look-nav {
