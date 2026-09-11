@@ -486,19 +486,26 @@ function albumIndex() {
   return Math.max(0, Math.min(state.slide, n - 1))
 }
 
+function albumMedia(file, className) {
+  const url = fileUrl(file)
+  const cls = className ? ` class="${className}"` : ""
+  if (file.mime.startsWith("video/")) {
+    return `<video${cls} src="${url}" muted playsinline preload="metadata"></video>`
+  }
+  return `<img${cls} src="${url}" alt="" />`
+}
+
 function albumStageHtml() {
   const gallery = state.sheetGallery
   if (!gallery.length) return `<p class="muted sheet-empty">这一组还没有照片。</p>`
   const index = albumIndex()
   state.slide = index
   const tile = gallery[index]
-  const video = tile.file.mime.startsWith("video/")
   return `
     <div class="sheet-stage" id="sheet-stage">
+      ${albumMedia(tile.file, "sheet-blur")}
       <button class="sheet-pic" data-peek="${index}" type="button">
-        ${video
-          ? `<video src="${fileUrl(tile.file)}" muted playsinline preload="metadata"></video>`
-          : `<img src="${fileUrl(tile.file)}" alt="" />`}
+        ${albumMedia(tile.file)}
       </button>
       ${gallery.length > 1 ? `
         <button class="sheet-nav prev" data-album-step="-1" type="button">‹</button>
@@ -570,6 +577,7 @@ function openPeek(index) {
   const file = tile.file
   peek.classList.remove("hidden")
   peek.innerHTML = `
+    ${albumMedia(file, "peek-blur")}
     <button class="peek-close" data-act="close-peek" type="button">关闭</button>
     ${file.mime.startsWith("video/")
       ? `<video class="peek-media" src="${fileUrl(file)}" controls playsinline autoplay></video>`
@@ -1000,7 +1008,7 @@ function unlock() {
 }
 
 function onSheetClick(event) {
-  if (event.target.closest("[data-act='close-peek']") || event.target.id === "peek") {
+  if (event.target.closest("[data-act='close-peek']") || event.target.id === "peek" || event.target.classList.contains("peek-blur")) {
     closePeek()
     return
   }
