@@ -18,7 +18,11 @@ const state = {
   entries: [],
   view: null,
   compose: "photo",
-  about: "her"
+  about: "her",
+  openYears: {},
+  fileId: "",
+  slide: 0,
+  dayKey: ""
 }
 
 let dbPromise = null
@@ -204,6 +208,104 @@ function bookEntries(who) {
   return state.entries.filter((item) => inferWho(item) !== "her")
 }
 
+function mediaFiles(entry) {
+  return (entry.files || []).filter((file) => file.mime.startsWith("image/") || file.mime.startsWith("video/"))
+}
+
+function entryYear(entry) {
+  return new Date(entry.happenedAt || Date.now()).getFullYear()
+}
+
+function dayKey(ts) {
+  const d = new Date(ts || Date.now())
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+}
+
+function latestBookYear() {
+  if (state.tab === "her") {
+    const first = groupByYear(herTiles())[0]
+    return first && first.year
+  }
+  const first = usYearGroups(bookEntries("us"))[0]
+  return first && first.year
+}
+
+function isYearOpen(year) {
+  if (Object.prototype.hasOwnProperty.call(state.openYears, year)) return !!state.openYears[year]
+  return year === latestBookYear()
+}
+
+function herTiles() {
+  const tiles = []
+  for (const entry of bookEntries("her")) {
+    for (const file of mediaFiles(entry)) {
+      tiles.push({ entry, file, year: entryYear(entry) })
+    }
+  }
+  return tiles
+}
+
+function groupByYear(tiles) {
+  const years = []
+  for (const tile of tiles) {
+    const last = years[years.length - 1]
+    if (!last || last.year !== tile.year) years.push({ year: tile.year, items: [tile] })
+    else last.items.push(tile)
+  }
+  return years
+}
+
+function usYearGroups(list) {
+  const days = []
+  for (const entry of list) {
+    const key = dayKey(entry.happenedAt)
+    const last = days[days.length - 1]
+    if (!last || last.key !== key) days.push({ key, at: entry.happenedAt, entries: [entry] })
+    else last.entries.push(entry)
+  }
+  const years = []
+  for (const day of days) {
+    const year = new Date(day.at).getFullYear()
+    let block = years[years.length - 1]
+    if (!block || block.year !== year) {
+      block = { year, seasons: [] }
+      years.push(block)
+    }
+    const key = seasonKey(day.at)
+    let season = block.seasons[block.seasons.length - 1]
+    if (!season || season.key !== key) {
+      season = { key, label: seasonLabel(day.at), days: [] }
+      block.seasons.push(season)
+    }
+    season.days.push(day)
+  }
+  return years
+}
+
+function dayMedia(day) {
+  return day.entries.flatMap((entry) => mediaFiles(entry).map((file) => ({ entry, file })))
+}
+
+function prettyTitle(entry) {
+  if (entry.title && entry.title !== kindLabel(entry.type)) return entry.title
+  const line = String(entry.body || "").split("\n").find((item) => item.trim())
+  return line || ""
+}
+
+function bindLookSwipe(onStep) {
+  const stage = $("look-stage")
+  if (!stage) return
+  let startX = 0
+  stage.addEventListener("touchstart", (event) => {
+    startX = event.changedTouches[0].clientX
+  }, { passive: true })
+  stage.addEventListener("touchend", (event) => {
+    const dx = event.changedTouches[0].clientX - startX
+    if (dx > 50) onStep(-1)
+    if (dx < -50) onStep(1)
+  })
+}
+
 function coverPhoto(who) {
   const list = who ? bookEntries(who) : state.entries
   for (const entry of list) {
@@ -243,12 +345,13 @@ function render() {
     us: ["我们", "与你的日子"],
     add: ["写下", "先选这是紫钦，还是我们"]
   }
-  $("app")?.classList.toggle("is-book", !state.view && state.tab !== "add")
+  $("app")?.classList.toggle("is-book", !state.view && !state.dayKey && state.tab !== "add")
   document.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("on", btn.dataset.tab === state.tab))
   if (!state.view) {
     $("page-title").textContent = titles[state.tab][0]
     $("page-sub").textContent = titles[state.tab][1]
   }
+  if (state.dayKey) return renderDayLook(state.dayKey)
   if (state.view) return renderDetail(state.view)
   if (state.tab === "add") return renderAdd()
   if (state.tab === "her") return renderHer()
@@ -281,59 +384,84 @@ function renderDoor() {
   `
 }
 
+function yearFold(year, count, unit) {
+  const open = isYearOpen(year)
+  return `<button class="year-fold ${open ? "on" : ""}" data-year="${year}" type="button">
+    <b>${cnYear(year)}</b>
+    <span>${count}${unit}</span>
+  </button>`
+}
+
+function polaroidHtml(tile, index) {
+  const video = tile.file.mime.startsWith("video/")
+  return `<button class="polaroid" data-open="${tile.entry.id}" data-file="${tile.file.id || ""}" data-slide="${index}" type="button">
+    <span class="polaroid-media">
+      ${video
+        ? `<video src="${fileUrl(tile.file)}" muted playsinline preload="metadata"></video><i class="play-dot" aria-hidden="true"></i>`
+        : `<img src="${fileUrl(tile.file)}" alt="" loading="lazy" />`}
+    </span>
+    <span>${formatDay(tile.entry.happenedAt)}</span>
+  </button>`
+}
+
 function renderHer() {
-  const list = bookEntries("her")
-  const tiles = []
-  for (const entry of list) {
-    const files = (entry.files || []).filter((file) => file.mime.startsWith("image/") || file.mime.startsWith("video/"))
-    for (const file of files) tiles.push({ entry, file })
-  }
+  const tiles = herTiles()
+  const years = groupByYear(tiles)
+  let offset = 0
   $("main").innerHTML = `
     <section class="book-head">
       <button class="cover-mark" data-tab="door" type="button">回到封面</button>
       <h2 class="cover-name">紫钦</h2>
       <div class="flourish" aria-hidden="true"><span></span></div>
     </section>
-    ${tiles.length ? `<div class="wall">${tiles.map((tile) => `
-      <button class="polaroid" data-open="${tile.entry.id}" type="button">
-        ${tile.file.mime.startsWith("video/")
-          ? `<video src="${fileUrl(tile.file)}" muted></video>`
-          : `<img src="${fileUrl(tile.file)}" alt="" />`}
-        <span>${formatDay(tile.entry.happenedAt)}</span>
-      </button>
-    `).join("")}</div>` : `<div class="empty"><p>还没把她的样子放进来。</p></div>`}
+    ${tiles.length ? years.map((block) => {
+      const start = offset
+      offset += block.items.length
+      const open = isYearOpen(block.year)
+      return `${yearFold(block.year, block.items.length, "张")}
+        ${open ? `<div class="wall">${block.items.map((tile, i) => polaroidHtml(tile, start + i)).join("")}</div>` : ""}`
+    }).join("") : `<div class="empty"><p>还没把她的样子放进来。</p></div>`}
   `
 }
 
+function capsuleHtml(day) {
+  const media = dayMedia(day)
+  const first = day.entries[0]
+  const title = prettyTitle(day.entries.find((item) => prettyTitle(item)) || first)
+  const body = day.entries.map((item) => item.body).find(Boolean) || ""
+  const letter = media.length === 0
+  const count = media.length
+  const cover = media[0]
+  return `<button class="capsule ${letter ? "letter-leaf leaf" : "leaf"}" data-day="${day.key}" type="button">
+    ${cover && cover.file.mime.startsWith("image/") ? `<img class="leaf-photo" src="${fileUrl(cover.file)}" alt="" loading="lazy" />` : ""}
+    ${cover && cover.file.mime.startsWith("video/") ? `<video class="leaf-video" src="${fileUrl(cover.file)}" muted playsinline preload="metadata"></video>` : ""}
+    ${count > 1 ? `<span class="capsule-count">${count} 张</span>` : ""}
+    <div class="leaf-meta">
+      <p class="leaf-date">${formatDay(day.at)}</p>
+      ${title ? `<h3>${escapeHtml(title)}</h3>` : ""}
+      ${body && !title ? `<div class="excerpt">${escapeHtml(body)}</div>` : ""}
+    </div>
+  </button>`
+}
+
 function renderUs() {
-  const list = bookEntries("us")
+  const years = usYearGroups(bookEntries("us"))
   $("main").innerHTML = `
     <section class="book-head">
       <button class="cover-mark" data-tab="door" type="button">回到封面</button>
       <h2 class="cover-name">我们</h2>
       <div class="flourish" aria-hidden="true"><span></span></div>
     </section>
-    ${list.length ? groupedEntries(list).map((group) => `
-      <div class="chapter">${group.label}</div>
-      ${group.items.map(cardHtml).join("")}
-    `).join("") : `<div class="empty"><p>还没把那天写进来。</p></div>`}
+    ${years.length ? years.map((block) => {
+      const count = block.seasons.reduce((sum, season) => sum + season.days.length, 0)
+      const open = isYearOpen(block.year)
+      return `${yearFold(block.year, count, "天")}
+        ${open ? block.seasons.map((season) => `
+          <div class="chapter">${season.label}</div>
+          ${season.days.map(capsuleHtml).join("")}
+        `).join("") : ""}`
+    }).join("") : `<div class="empty"><p>还没把那天写进来。</p></div>`}
   `
-}
-
-function cardHtml(entry) {
-  const photos = (entry.files || []).filter((file) => file.mime.startsWith("image/"))
-  const videos = (entry.files || []).filter((file) => file.mime.startsWith("video/"))
-  const title = entry.title && entry.title !== kindLabel(entry.type) ? entry.title : ""
-  const letter = inferWho(entry) === "words"
-  return `<button class="leaf ${letter ? "letter-leaf" : ""}" data-open="${entry.id}" type="button">
-    ${photos[0] ? `<img class="leaf-photo" src="${fileUrl(photos[0])}" alt="" />` : ""}
-    ${!photos[0] && videos[0] ? `<video class="leaf-video" src="${fileUrl(videos[0])}" muted></video>` : ""}
-    <div class="leaf-meta">
-      <p class="leaf-date">${formatDay(entry.happenedAt)}</p>
-      ${title ? `<h3>${escapeHtml(title)}</h3>` : ""}
-      ${entry.body ? `<div class="excerpt">${escapeHtml(entry.body)}</div>` : ""}
-    </div>
-  </button>`
 }
 
 function renderAdd() {
@@ -396,32 +524,115 @@ function renderMine() {
   `
 }
 
+function lookStage(gallery) {
+  const index = Math.max(0, Math.min(state.slide, gallery.length - 1))
+  state.slide = index
+  const tile = gallery[index]
+  if (!tile) return ""
+  const file = tile.file
+  return `
+    <div id="look-stage" class="look-stage">
+      ${gallery.length > 1 ? `<button class="look-nav prev" data-slide-step="-1" type="button">‹</button>` : ""}
+      <div class="media-frame">
+        ${file.mime.startsWith("video/")
+          ? `<video class="hero-img" src="${fileUrl(file)}" controls playsinline></video>`
+          : `<img class="hero-img" src="${fileUrl(file)}" alt="" />`}
+      </div>
+      ${gallery.length > 1 ? `<button class="look-nav next" data-slide-step="1" type="button">›</button>` : ""}
+    </div>
+    ${gallery.length > 1 ? `<p class="look-count">${index + 1} / ${gallery.length}</p>` : ""}
+  `
+}
+
+function renderLookPage({ title, date, words, gallery, docs, deleteId }) {
+  $("page-title").textContent = title
+  $("page-sub").textContent = date
+  $("main").innerHTML = `
+    <div class="flourish" aria-hidden="true"><span></span></div>
+    ${words}
+    ${gallery.length ? lookStage(gallery) : ""}
+    ${docs}
+    <div class="row-btns" style="margin-top:16px">
+      <button class="btn plain" data-act="back" type="button">返回</button>
+      ${deleteId ? `<button class="btn danger" data-act="delete" data-id="${deleteId}" type="button">删除</button>` : ""}
+    </div>
+  `
+  bindLookSwipe((step) => {
+    if (!gallery.length) return
+    state.slide = (state.slide + step + gallery.length) % gallery.length
+    const next = gallery[state.slide]
+    if (next) {
+      state.view = next.entry.id
+      state.fileId = next.file.id || ""
+    }
+    render()
+  })
+}
+
+function fileDocs(files) {
+  return (files || []).map((file) => {
+    if (file.mime.startsWith("image/") || file.mime.startsWith("video/")) return ""
+    if (file.mime === "application/pdf" || /\.pdf$/i.test(file.name)) {
+      return `<iframe class="preview-frame" src="${fileUrl(file)}" title="${escapeHtml(file.name)}"></iframe>`
+    }
+    return `<section class="card form"><p>${escapeHtml(file.name)}</p><a class="btn ghost" href="${fileUrl(file)}" download="${escapeHtml(file.name)}">打开这封信</a></section>`
+  }).join("")
+}
+
 function renderDetail(id) {
   const entry = state.entries.find((item) => item.id === id)
   if (!entry) {
     state.view = null
     return render()
   }
-  const whoLabel = inferWho(entry) === "her" ? "紫钦" : inferWho(entry) === "us" ? "我们" : "字"
-  $("page-title").textContent = entry.title && entry.title !== kindLabel(entry.type) ? entry.title : whoLabel
-  $("page-sub").textContent = formatDay(entry.happenedAt)
-  const files = entry.files || []
-  $("main").innerHTML = `
-    <div class="flourish" aria-hidden="true"><span></span></div>
-    ${entry.body ? `<section class="letter-sheet">${escapeHtml(entry.body)}</section>` : ""}
-    ${files.map((file) => {
-      if (file.mime.startsWith("image/")) return `<div class="media-frame"><img class="hero-img" src="${fileUrl(file)}" alt="${escapeHtml(file.name)}" /></div>`
-      if (file.mime.startsWith("video/")) return `<div class="media-frame"><video class="hero-img" src="${fileUrl(file)}" controls></video></div>`
-      if (file.mime === "application/pdf" || /\.pdf$/i.test(file.name)) {
-        return `<iframe class="preview-frame" src="${fileUrl(file)}" title="${escapeHtml(file.name)}"></iframe>`
-      }
-      return `<section class="card form"><p>${escapeHtml(file.name)}</p><a class="btn ghost" href="${fileUrl(file)}" download="${escapeHtml(file.name)}">打开这封信</a></section>`
-    }).join("")}
-    <div class="row-btns" style="margin-top:16px">
-      <button class="btn plain" data-act="back" type="button">返回</button>
-      <button class="btn danger" data-act="delete" data-id="${entry.id}" type="button">删除</button>
-    </div>
-  `
+  if (inferWho(entry) === "her") {
+    const gallery = herTiles()
+    let index = gallery.findIndex((tile) => tile.entry.id === id && (!state.fileId || tile.file.id === state.fileId))
+    if (index < 0) index = gallery.findIndex((tile) => tile.entry.id === id)
+    state.slide = index < 0 ? 0 : index
+    const current = gallery[state.slide] || { entry }
+    renderLookPage({
+      title: prettyTitle(current.entry) || "紫钦",
+      date: formatDay(current.entry.happenedAt),
+      words: current.entry.body ? `<section class="letter-sheet">${escapeHtml(current.entry.body)}</section>` : "",
+      gallery,
+      docs: "",
+      deleteId: current.entry.id
+    })
+    return
+  }
+  const gallery = mediaFiles(entry).map((file) => ({ entry, file }))
+  state.slide = Math.min(state.slide, Math.max(gallery.length - 1, 0))
+  renderLookPage({
+    title: prettyTitle(entry) || (inferWho(entry) === "us" ? "我们" : "字"),
+    date: formatDay(entry.happenedAt),
+    words: entry.body ? `<section class="letter-sheet">${escapeHtml(entry.body)}</section>` : "",
+    gallery,
+    docs: fileDocs(entry.files),
+    deleteId: entry.id
+  })
+}
+
+function renderDayLook(key) {
+  const days = usYearGroups(bookEntries("us")).flatMap((block) => block.seasons.flatMap((season) => season.days))
+  const day = days.find((item) => item.key === key)
+  if (!day) {
+    state.dayKey = ""
+    return render()
+  }
+  const gallery = dayMedia(day)
+  const words = day.entries.filter((item) => item.body).map((item) => `<section class="letter-sheet">${escapeHtml(item.body)}</section>`).join("")
+  const docs = day.entries.map((item) => fileDocs(item.files)).join("")
+  const titled = day.entries.find((item) => prettyTitle(item))
+  state.slide = Math.min(state.slide, Math.max(gallery.length - 1, 0))
+  renderLookPage({
+    title: prettyTitle(titled || day.entries[0]) || "那天",
+    date: formatDay(day.at),
+    words,
+    gallery,
+    docs,
+    deleteId: day.entries.length === 1 ? day.entries[0].id : ""
+  })
 }
 
 function bindEvents() {
@@ -453,6 +664,9 @@ function unlock() {
 function switchTab(tab) {
   state.tab = tab
   state.view = null
+  state.dayKey = ""
+  state.fileId = ""
+  state.slide = 0
   if (tab === "her") state.about = "her"
   if (tab === "us") state.about = "us"
   render()
@@ -475,9 +689,44 @@ async function onMainClick(event) {
     render()
     return
   }
+  const yearBtn = event.target.closest("[data-year]")
+  if (yearBtn) {
+    const year = Number(yearBtn.dataset.year)
+    state.openYears[year] = !isYearOpen(year)
+    render()
+    return
+  }
+  const dayBtn = event.target.closest("[data-day]")
+  if (dayBtn) {
+    state.dayKey = dayBtn.dataset.day
+    state.view = null
+    state.slide = 0
+    render()
+    return
+  }
+  const stepBtn = event.target.closest("[data-slide-step]")
+  if (stepBtn) {
+    const gallery = state.dayKey
+      ? dayMedia((usYearGroups(bookEntries("us")).flatMap((block) => block.seasons.flatMap((season) => season.days)).find((item) => item.key === state.dayKey) || { entries: [] }))
+      : inferWho(state.entries.find((item) => item.id === state.view) || {}) === "her"
+        ? herTiles()
+        : mediaFiles(state.entries.find((item) => item.id === state.view) || { files: [] }).map((file) => ({ entry: state.entries.find((item) => item.id === state.view), file }))
+    if (!gallery.length) return
+    state.slide = (state.slide + Number(stepBtn.dataset.slideStep) + gallery.length) % gallery.length
+    const next = gallery[state.slide]
+    if (next && next.entry) {
+      state.view = state.dayKey ? null : next.entry.id
+      state.fileId = next.file.id || ""
+    }
+    render()
+    return
+  }
   const open = event.target.closest("[data-open]")
   if (open) {
     state.view = open.dataset.open
+    state.fileId = open.dataset.file || ""
+    state.slide = Number(open.dataset.slide || 0)
+    state.dayKey = ""
     render()
     return
   }
@@ -486,6 +735,9 @@ async function onMainClick(event) {
   if (!act) return
   if (act.dataset.act === "back") {
     state.view = null
+    state.dayKey = ""
+    state.fileId = ""
+    state.slide = 0
     render()
     return
   }
@@ -501,6 +753,7 @@ async function onMainClick(event) {
       else await deleteEntry(act.dataset.id)
       await loadAll()
       state.view = null
+      state.dayKey = ""
       render()
     } catch (error) {
       alert(error.message || "删除失败")
