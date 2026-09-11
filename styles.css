@@ -40,21 +40,21 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 28%;
+  object-position: center 38%;
 }
 .backdrop::after {
   content: "";
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 50% 28%, transparent 28%, rgba(243, 238, 246, 0.22) 72%, var(--bg) 100%),
-    linear-gradient(180deg, rgba(243, 238, 246, 0.16) 0%, rgba(243, 238, 246, 0.38) 46%, var(--bg) 90%, var(--bg) 100%),
-    linear-gradient(90deg, rgba(243, 238, 246, 0.32), transparent 20%, transparent 80%, rgba(243, 238, 246, 0.32));
+    radial-gradient(ellipse at 50% 38%, transparent 32%, rgba(243, 238, 246, 0.18) 76%, var(--bg) 100%),
+    linear-gradient(180deg, rgba(243, 238, 246, 0.12) 0%, rgba(243, 238, 246, 0.28) 46%, var(--bg) 90%, var(--bg) 100%),
+    linear-gradient(90deg, rgba(243, 238, 246, 0.28), transparent 20%, transparent 80%, rgba(243, 238, 246, 0.28));
 }
 body.has-backdrop .backdrop::after {
   background:
-    linear-gradient(180deg, rgba(243, 238, 246, 0.82) 0%, rgba(243, 238, 246, 0.5) 26%, rgba(243, 238, 246, 0.16) 52%, var(--bg) 92%),
-    linear-gradient(90deg, rgba(243, 238, 246, 0.42), transparent 16%, transparent 84%, rgba(243, 238, 246, 0.42));
+    linear-gradient(180deg, rgba(243, 238, 246, 0.4) 0%, rgba(243, 238, 246, 0.08) 12%, transparent 22%, transparent 58%, rgba(243, 238, 246, 0.22) 78%, var(--bg) 100%),
+    linear-gradient(90deg, rgba(243, 238, 246, 0.18), transparent 18%, transparent 82%, rgba(243, 238, 246, 0.18));
 }
 body.has-backdrop {
   background-image: none;
@@ -219,15 +219,15 @@ body.has-backdrop .tale-intro .cover-name {
   color: #2c2236;
   text-shadow: 0 1px 0 rgba(255, 250, 253, 0.96), 0 0 18px rgba(255, 250, 253, 0.8);
 }
-body.has-backdrop .cover-line {
+body.has-backdrop .cover-line,
+body.has-backdrop .wall-line {
   color: #53405f;
-  text-shadow: 0 1px 0 rgba(255, 250, 253, 0.94), 0 0 14px rgba(255, 250, 253, 0.75);
+  text-shadow: 0 1px 0 rgba(255, 250, 253, 0.88);
 }
 body.has-backdrop .book-head .cover-mark,
 body.has-backdrop .book-head .cover-name,
-body.has-backdrop .book-head .cover-line,
 body.has-backdrop .book-head .link {
-  text-shadow: 0 1px 8px rgba(255, 250, 253, 0.55);
+  text-shadow: 0 1px 6px rgba(255, 250, 253, 0.45);
 }
 @keyframes cover-rise {
   from { opacity: 0; transform: translateY(10px); }
@@ -622,11 +622,15 @@ body.is-view .tabbar { display: none; }
   line-height: 1.75;
   letter-spacing: 0.04em;
 }
-.app.is-remember .book-head .cover-line {
-  margin-top: 10px;
-  margin-bottom: 0;
-  padding-top: 0;
+.app.is-remember .wall-line {
+  flex: 0 0 auto;
+  margin: auto auto 8px;
+  padding: 0 16px;
   max-width: 22em;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.7;
+  letter-spacing: 0.04em;
 }
 
 .wall {
@@ -640,14 +644,13 @@ body.is-view .tabbar { display: none; }
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
 }
 .app.is-remember .wall {
-  flex: 1 1 auto;
-  justify-content: space-evenly;
-  gap: clamp(8px, 1.6vh, 14px);
-  margin-top: 14px;
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
   margin-bottom: 0;
-  padding-top: 2px;
+  padding-top: 0;
   padding-bottom: 4px;
-  min-height: 0;
 }
 .track {
   display: flex;

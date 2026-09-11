@@ -253,7 +253,7 @@ function bgmEntry() {
 }
 
 function defaultBgmUrl() {
-  return "./bgm-zi.mp3?v=20260912g"
+  return "./bgm-zi.mp3?v=20260912h"
 }
 
 function bgmUrl() {
@@ -1481,9 +1481,8 @@ function renderUs() {
         <h2 class="cover-name">我们</h2>
         ${days.length ? `<button class="link quiet" data-act="replay-tale" type="button">从头看</button>` : `<span></span>`}
       </div>
-      <p class="cover-line">${escapeHtml(pickWallLine())}</p>
     </section>
-    ${days.length ? wallHtml(days, capsuleHtml) : `<div class="empty"><p>从初见那一日写起，也好。</p></div>`}
+    ${days.length ? `<p class="cover-line wall-line">${escapeHtml(pickWallLine())}</p>${wallHtml(days, capsuleHtml)}` : `<div class="empty"><p>从初见那一日写起，也好。</p></div>`}
   `
   bindWalls()
 }
