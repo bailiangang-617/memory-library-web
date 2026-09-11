@@ -209,25 +209,31 @@ body.has-backdrop .book-head {
 }
 body.has-backdrop .cover-mark,
 body.has-backdrop .book-head .cover-mark,
-body.has-backdrop .tale-intro .cover-mark {
-  color: #4a3158;
-  text-shadow: 0 1px 0 rgba(255, 250, 253, 0.96), 0 0 16px rgba(255, 250, 253, 0.85);
+body.has-backdrop .tale-intro .cover-mark,
+body.has-backdrop .book-head .link {
+  color: #2a1f32;
+  text-shadow:
+    0 1px 0 rgba(255, 250, 253, 0.96),
+    1px 0 0 rgba(255, 250, 253, 0.92),
+    -1px 0 0 rgba(255, 250, 253, 0.92),
+    0 -1px 0 rgba(255, 250, 253, 0.92);
 }
 body.has-backdrop .cover-name,
 body.has-backdrop .book-head .cover-name,
 body.has-backdrop .tale-intro .cover-name {
+  color: #22182a;
+  text-shadow:
+    0 1px 0 rgba(255, 250, 253, 0.96),
+    1px 0 0 rgba(255, 250, 253, 0.92),
+    -1px 0 0 rgba(255, 250, 253, 0.92),
+    0 -1px 0 rgba(255, 250, 253, 0.92);
+}
+body.has-backdrop .cover-line {
   color: #2c2236;
-  text-shadow: 0 1px 0 rgba(255, 250, 253, 0.96), 0 0 18px rgba(255, 250, 253, 0.8);
-}
-body.has-backdrop .cover-line,
-body.has-backdrop .wall-line {
-  color: #53405f;
-  text-shadow: 0 1px 0 rgba(255, 250, 253, 0.88);
-}
-body.has-backdrop .book-head .cover-mark,
-body.has-backdrop .book-head .cover-name,
-body.has-backdrop .book-head .link {
-  text-shadow: 0 1px 6px rgba(255, 250, 253, 0.45);
+  text-shadow:
+    0 1px 0 rgba(255, 250, 253, 0.95),
+    1px 0 0 rgba(255, 250, 253, 0.9),
+    -1px 0 0 rgba(255, 250, 253, 0.9);
 }
 @keyframes cover-rise {
   from { opacity: 0; transform: translateY(10px); }
@@ -624,13 +630,24 @@ body.is-view .tabbar { display: none; }
 }
 .app.is-remember .wall-line {
   flex: 0 0 auto;
-  margin: auto auto 8px;
-  padding: 0 16px;
-  max-width: 22em;
+  width: fit-content;
+  max-width: min(22em, calc(100% - 32px));
+  margin: auto auto 10px;
+  padding: 8px 16px;
   text-align: center;
   font-size: 13px;
   line-height: 1.7;
   letter-spacing: 0.04em;
+  color: #2c2236;
+  background: rgba(255, 250, 253, 0.9);
+  border: 1px solid rgba(230, 216, 236, 0.7);
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(44, 34, 54, 0.08);
+}
+body.has-backdrop .wall-line {
+  color: #2c2236;
+  text-shadow: none;
+  background: rgba(255, 250, 253, 0.92);
 }
 
 .wall {
