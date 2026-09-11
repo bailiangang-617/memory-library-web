@@ -9,12 +9,23 @@ const KINDS = [
   { type: "note", label: "一句话" }
 ]
 
+const FILTERS = [
+  { id: "all", label: "全部" },
+  { id: "her", label: "紫钦" },
+  { id: "us", label: "我们" },
+  { id: "words", label: "字" }
+]
+
+const MONTHS = ["正月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"]
+const CN_NUM = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九"]
+
 const state = {
   tab: "story",
   entries: [],
   filter: "all",
   view: null,
-  compose: "chat"
+  compose: "photo",
+  about: "her"
 }
 
 let dbPromise = null
@@ -70,9 +81,10 @@ function getAll() {
 }
 
 async function persistEntry(entry) {
-  if (Cloud.on()) return Cloud.save(entry)
-  await putEntry(entry)
-  return entry
+  const packed = withWho(entry)
+  if (Cloud.on()) return fromStored(await Cloud.save(packed))
+  await putEntry(packed)
+  return fromStored(packed)
 }
 
 function putEntry(entry) {
@@ -110,11 +122,11 @@ function deleteEntry(id) {
 async function loadAll() {
   if (window.Cloud && Cloud.on()) {
     await Cloud.ready()
-    state.entries = (await Cloud.list()).sort((a, b) => (b.happenedAt || 0) - (a.happenedAt || 0))
+    state.entries = (await Cloud.list()).map(fromStored).sort((a, b) => (b.happenedAt || 0) - (a.happenedAt || 0))
     return
   }
   const entries = await getAll()
-  state.entries = entries.sort((a, b) => (b.happenedAt || 0) - (a.happenedAt || 0))
+  state.entries = entries.map(fromStored).sort((a, b) => (b.happenedAt || 0) - (a.happenedAt || 0))
 }
 
 function fileUrl(file) {
@@ -131,8 +143,67 @@ function fileUrl(file) {
   return urlCache.get(file.id)
 }
 
-function shareHint() {
-  return Cloud.on() ? "已开通云端，其他人打开同一网站也能看到你记下的内容。" : "现在还是仅本机。开通云端后，上传的内容才能给别人看。"
+function inferWho(entry) {
+  if (entry.who) return entry.who
+  if (entry.type === "chat" || entry.type === "letter" || entry.type === "note") return "words"
+  return "us"
+}
+
+function withWho(entry) {
+  const who = inferWho(entry)
+  const body = String(entry.body || "").replace(/\n\n<!--who:\w+-->$/, "")
+  return { ...entry, who, body: `${body}\n\n<!--who:${who}-->` }
+}
+
+function fromStored(entry) {
+  const raw = String(entry.body || "")
+  const match = raw.match(/\n\n<!--who:(\w+)-->$/)
+  return {
+    ...entry,
+    body: raw.replace(/\n\n<!--who:\w+-->$/, ""),
+    who: match ? match[1] : inferWho(entry)
+  }
+}
+
+function cnYear(year) {
+  return String(year).split("").map((d) => CN_NUM[Number(d)] || d).join("")
+}
+
+function formatDay(ts) {
+  const d = new Date(ts || Date.now())
+  return `${MONTHS[d.getMonth()]}${d.getDate()}日`
+}
+
+function monthLabel(ts) {
+  const d = new Date(ts || Date.now())
+  return `${cnYear(d.getFullYear())}  ·  ${MONTHS[d.getMonth()]}`
+}
+
+function monthKey(ts) {
+  const d = new Date(ts || Date.now())
+  return `${d.getFullYear()}-${d.getMonth()}`
+}
+
+function groupedEntries(list) {
+  const groups = []
+  for (const entry of list) {
+    const key = monthKey(entry.happenedAt)
+    const last = groups[groups.length - 1]
+    if (!last || last.key !== key) {
+      groups.push({ key, label: monthLabel(entry.happenedAt), items: [entry] })
+    } else {
+      last.items.push(entry)
+    }
+  }
+  return groups
+}
+
+function coverPhoto() {
+  for (const entry of state.entries) {
+    const photo = (entry.files || []).find((file) => file.mime.startsWith("image/"))
+    if (photo) return photo
+  }
+  return null
 }
 
 function escapeHtml(text) {
@@ -141,12 +212,6 @@ function escapeHtml(text) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-}
-
-function formatDay(ts) {
-  const d = new Date(ts || Date.now())
-  const p = (n) => String(n).padStart(2, "0")
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
 
 function toDatetimeLocal(ts) {
@@ -166,15 +231,16 @@ async function filesFromInput(list) {
 
 function filteredEntries() {
   if (state.filter === "all") return state.entries
-  return state.entries.filter((item) => item.type === state.filter)
+  return state.entries.filter((item) => inferWho(item) === state.filter)
 }
 
 function render() {
   const titles = {
-    story: ["故事", Cloud.on() ? `云端共享 · ${state.entries.length} 个点滴` : `仅本机 · ${state.entries.length} 个点滴`],
-    add: ["记下", Cloud.on() ? "保存后会上传，打开这个网站的人都能看" : "先开通云端，别人才能看到你记下的内容"],
-    mine: ["我们的点滴", shareHint()]
+    story: ["册子", "与紫钦的日子"],
+    add: ["写下", "想留给她的，都可以放进来"],
+    mine: ["我们", "这本册子只给你们两个人"]
   }
+  $("app")?.classList.toggle("is-album", state.tab === "story" && !state.view)
   if (!state.view) {
     $("page-title").textContent = titles[state.tab][0]
     $("page-sub").textContent = titles[state.tab][1]
@@ -187,91 +253,103 @@ function render() {
 
 function renderStory() {
   const list = filteredEntries()
+  const photo = coverPhoto()
+  const cover = `
+    <section class="cover">
+      ${photo ? `<img class="leaf-photo" src="${fileUrl(photo)}" alt="" style="height:180px;border-radius:8px;margin:0 0 16px" />` : ""}
+      <p class="cover-mark">给她的册子</p>
+      <h2 class="cover-name">贺紫钦</h2>
+      <div class="flourish" aria-hidden="true"><span></span></div>
+      <p class="cover-line">${state.entries.length ? `已有 ${state.entries.length} 页回忆` : "还没把那天放进来"}</p>
+    </section>
+    <div class="links">
+      ${FILTERS.map((item) => `<button class="link ${state.filter === item.id ? "on" : ""}" data-filter="${item.id}" type="button">${item.label}</button>`).join("")}
+    </div>
+  `
   if (!state.entries.length) {
-    $("main").innerHTML = `<div class="empty"><h2>还没有点滴</h2><p>${Cloud.on() ? "云端还是空的。记下之后，其他人刷新就能看到。" : "现在只能存在这台浏览器里。要让别人看见，请先到「我们」开通云端。"}</p><div class="row-btns" style="justify-content:center"><button class="btn primary" data-act="demo" type="button">载入示例故事</button><button class="btn plain" data-tab="add" type="button">自己记下</button></div></div>`
+    $("main").innerHTML = `${cover}<div class="empty"><p>照片、视频、对话或一封信，都可以从「写下」放进来。</p></div>`
     return
   }
-  $("main").innerHTML = `
-    <div class="chips">
-      <button class="chip ${state.filter === "all" ? "on" : ""}" data-filter="all" type="button">全部</button>
-      ${KINDS.map((item) => `<button class="chip ${state.filter === item.type ? "on" : ""}" data-filter="${item.type}" type="button">${item.label}</button>`).join("")}
-    </div>
-    ${list.length ? list.map(cardHtml).join("") : `<div class="empty"><h2>这一类还是空的</h2><p>换一个筛选，或再记一条。</p></div>`}
-  `
+  if (!list.length) {
+    $("main").innerHTML = `${cover}<div class="empty"><p>这一面还是空的。</p></div>`
+    return
+  }
+  $("main").innerHTML = cover + groupedEntries(list).map((group) => `
+    <div class="chapter">${group.label}</div>
+    ${group.items.map(cardHtml).join("")}
+  `).join("")
 }
 
 function cardHtml(entry) {
   const photos = (entry.files || []).filter((file) => file.mime.startsWith("image/"))
   const videos = (entry.files || []).filter((file) => file.mime.startsWith("video/"))
-  const docs = (entry.files || []).filter((file) => !file.mime.startsWith("image/") && !file.mime.startsWith("video/"))
-  return `<button class="card story-card" data-open="${entry.id}" type="button">
-    <div class="kind">${kindLabel(entry.type)}</div>
-    <h3>${escapeHtml(entry.title || kindLabel(entry.type))}</h3>
-    <div class="when">${formatDay(entry.happenedAt)}</div>
-    ${entry.body ? `<div class="excerpt">${escapeHtml(entry.body)}</div>` : ""}
-    ${photos.length || videos.length ? `<div class="media-row">
-      ${photos.map((file) => `<img src="${fileUrl(file)}" alt="" />`).join("")}
-      ${videos.map((file) => `<video src="${fileUrl(file)}" muted></video>`).join("")}
-    </div>` : ""}
-    ${docs.map((file) => `<div class="letter-name">${escapeHtml(file.name)}</div>`).join("")}
+  const title = entry.title && entry.title !== kindLabel(entry.type) ? entry.title : ""
+  const letter = inferWho(entry) === "words"
+  return `<button class="leaf ${letter ? "letter-leaf" : ""}" data-open="${entry.id}" type="button">
+    ${photos[0] ? `<img class="leaf-photo" src="${fileUrl(photos[0])}" alt="" />` : ""}
+    ${!photos[0] && videos[0] ? `<video class="leaf-video" src="${fileUrl(videos[0])}" muted></video>` : ""}
+    <div class="leaf-meta">
+      <p class="leaf-date">${formatDay(entry.happenedAt)}</p>
+      ${title ? `<h3>${escapeHtml(title)}</h3>` : ""}
+      ${entry.body ? `<div class="excerpt">${escapeHtml(entry.body)}</div>` : ""}
+    </div>
   </button>`
 }
 
 function renderAdd() {
   const type = state.compose
+  const media = type === "photo" || type === "video"
   $("main").innerHTML = `
     <div class="compose-types">
       ${KINDS.map((item) => `<button class="btn ${type === item.type ? "primary" : "plain"}" data-compose="${item.type}" type="button">${item.label}</button>`).join("")}
     </div>
     <section class="card form">
+      ${media ? `<div class="about-row">
+        <button class="btn ${state.about === "her" ? "primary" : "plain"}" data-about="her" type="button">紫钦</button>
+        <button class="btn ${state.about === "us" ? "primary" : "plain"}" data-about="us" type="button">我们</button>
+      </div>` : ""}
       <input id="f-title" class="input" placeholder="${titlePlaceholder(type)}" />
       <input id="f-when" class="input" type="datetime-local" value="${toDatetimeLocal(Date.now())}" />
-      ${type === "chat" || type === "note" ? `<textarea id="f-body" placeholder="${type === "chat" ? "把要留下的那段对话粘贴进来。也可以从电脑版微信导出后再复制。" : "写一句当时想记住的话。"}"></textarea>` : ""}
-      ${type === "chat" ? `<label class="btn ghost file-btn">从导出的 txt / html 读入<input id="f-chatfile" type="file" accept=".txt,.html,.htm,text/plain,text/html" /></label>` : ""}
-      ${type === "photo" ? `<label class="btn ghost file-btn">选择照片<input id="f-files" type="file" accept="image/*" multiple /></label>` : ""}
-      ${type === "video" ? `<label class="btn ghost file-btn">选择视频<input id="f-files" type="file" accept="video/*" multiple /></label>` : ""}
-      ${type === "letter" ? `<label class="btn ghost file-btn">选择 Word / PDF<input id="f-files" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label>` : ""}
+      <textarea id="f-body" placeholder="${type === "chat" ? "把想留下的那几句贴进来。" : "想在旁边写一句吗？也可以不写。"}"></textarea>
+      ${type === "chat" ? `<label class="btn ghost file-btn">从导出的对话读入<input id="f-chatfile" type="file" accept=".txt,.html,.htm,text/plain,text/html" /></label>` : ""}
+      ${type === "photo" ? `<label class="btn ghost file-btn">放入照片<input id="f-files" type="file" accept="image/*" multiple /></label>` : ""}
+      ${type === "video" ? `<label class="btn ghost file-btn">放入视频<input id="f-files" type="file" accept="video/*" multiple /></label>` : ""}
+      ${type === "letter" ? `<label class="btn ghost file-btn">放入信<input id="f-files" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label>` : ""}
       <p id="f-picked" class="muted"></p>
-      <button class="btn primary" id="f-save" type="button">收进故事</button>
+      <button class="btn primary" id="f-save" type="button">放进册子</button>
     </section>
-    <p class="sub">${Cloud.on() ? "保存后会上传到云端，知道链接和口令的人刷新就能看到。" : "还没开通云端时，内容只留在这台浏览器。开通方法在「我们」。"}</p>
   `
 }
 
 function titlePlaceholder(type) {
-  if (type === "chat") return "这段对话可以叫什么，比如 深夜闲聊"
-  if (type === "photo") return "这组照片，比如 第一次旅行"
-  if (type === "video") return "这段视频"
-  if (type === "letter") return "这封信的名字"
-  return "这一句，比如 相识 100 天"
+  if (type === "chat") return "可以写一个名字，比如 那天晚上"
+  if (type === "photo") return "可以写一句，比如 她侧过身的时候"
+  if (type === "video") return "这段视频，想叫它什么"
+  if (type === "letter") return "这封信"
+  return "比如 在一起的某一天"
 }
 
 function renderMine() {
-  const count = (type) => state.entries.filter((item) => item.type === type).length
+  const count = (who) => state.entries.filter((item) => inferWho(item) === who).length
   $("main").innerHTML = `
+    <section class="cover">
+      <p class="cover-mark">只给你们</p>
+      <h2 class="cover-name">我们</h2>
+      <div class="flourish" aria-hidden="true"><span></span></div>
+      <p class="cover-line">贺紫钦，和这本册子</p>
+    </section>
     <div class="stats">
-      <div class="card stat"><b>${state.entries.length}</b><span>点滴</span></div>
-      <div class="card stat"><b>${count("chat") + count("letter")}</b><span>聊天/信</span></div>
-      <div class="card stat"><b>${count("photo") + count("video")}</b><span>影像</span></div>
+      <div class="card stat"><b>${count("her")}</b><span>紫钦</span></div>
+      <div class="card stat"><b>${count("us")}</b><span>我们</span></div>
+      <div class="card stat"><b>${count("words")}</b><span>字</span></div>
     </div>
     <section class="card list">
-      <h3>可以记下</h3>
-      <p>微信聊天摘录（粘贴或导入导出文件）</p>
-      <p>照片、视频</p>
-      <p>电子信：Word / PDF</p>
-      <p>一句纪念日备注</p>
+      <h3>可以放进来</h3>
+      <p>紫钦的照片、视频</p>
+      <p>两个人的合照、视频</p>
+      <p>想留下的对话、信、一句话</p>
     </section>
-    <section class="card list">
-      <h3>共享状态</h3>
-      <p>${Cloud.on() ? "已接上云函数。你记下的内容会存到云端，其他人打开同一网站刷新就能看。" : "还差云函数地址。免费托管不能上传网页，改用「新建云函数」即可。"}</p>
-    </section>
-    <section class="card list">
-      <h3>做不到</h3>
-      <p class="muted">自动读取微信正在聊的记录</p>
-      <p class="muted">扫描整机相册</p>
-    </section>
-    <button class="btn ghost block" data-act="demo" type="button">载入示例故事</button>
-    <button class="btn danger block" data-act="clear" type="button" style="margin-top:10px">${Cloud.on() ? "清空云端故事（所有人都会看不到）" : "清空本机故事"}</button>
+    <button class="btn danger block" data-act="clear" type="button" style="margin-top:18px">清空这本册子</button>
   `
 }
 
@@ -281,22 +359,24 @@ function renderDetail(id) {
     state.view = null
     return render()
   }
-  $("page-title").textContent = entry.title || kindLabel(entry.type)
-  $("page-sub").textContent = `${kindLabel(entry.type)} · ${formatDay(entry.happenedAt)}`
+  const whoLabel = inferWho(entry) === "her" ? "紫钦" : inferWho(entry) === "us" ? "我们" : "字"
+  $("page-title").textContent = entry.title && entry.title !== kindLabel(entry.type) ? entry.title : whoLabel
+  $("page-sub").textContent = formatDay(entry.happenedAt)
   const files = entry.files || []
   $("main").innerHTML = `
-    ${entry.body ? `<section class="card form"><div class="excerpt" style="max-height:none">${escapeHtml(entry.body)}</div></section>` : ""}
+    <div class="flourish" aria-hidden="true"><span></span></div>
+    ${entry.body ? `<section class="letter-sheet">${escapeHtml(entry.body)}</section>` : ""}
     ${files.map((file) => {
       if (file.mime.startsWith("image/")) return `<div class="media-frame"><img class="hero-img" src="${fileUrl(file)}" alt="${escapeHtml(file.name)}" /></div>`
       if (file.mime.startsWith("video/")) return `<div class="media-frame"><video class="hero-img" src="${fileUrl(file)}" controls></video></div>`
       if (file.mime === "application/pdf" || /\.pdf$/i.test(file.name)) {
         return `<iframe class="preview-frame" src="${fileUrl(file)}" title="${escapeHtml(file.name)}"></iframe>`
       }
-      return `<section class="card form"><p>${escapeHtml(file.name)}</p><a class="btn ghost" href="${fileUrl(file)}" download="${escapeHtml(file.name)}">打开 / 下载这封信</a><p class="muted">Word 文件请下载后用本地软件查看。</p></section>`
+      return `<section class="card form"><p>${escapeHtml(file.name)}</p><a class="btn ghost" href="${fileUrl(file)}" download="${escapeHtml(file.name)}">打开这封信</a></section>`
     }).join("")}
     <div class="row-btns" style="margin-top:16px">
-      <button class="btn danger" data-act="delete" data-id="${entry.id}" type="button">删除这条</button>
       <button class="btn plain" data-act="back" type="button">返回</button>
+      <button class="btn danger" data-act="delete" data-id="${entry.id}" type="button">删除</button>
     </div>
   `
 }
@@ -343,9 +423,16 @@ async function onMainClick(event) {
     render()
     return
   }
+  const about = event.target.closest("[data-about]")
+  if (about) {
+    state.about = about.dataset.about
+    render()
+    return
+  }
   const compose = event.target.closest("[data-compose]")
   if (compose) {
     state.compose = compose.dataset.compose
+    if (state.compose === "photo" || state.compose === "video") state.about = state.about || "her"
     render()
     return
   }
@@ -428,16 +515,18 @@ async function saveCompose() {
   const fileInput = $("f-files")
   let files = []
   if (fileInput?.files?.length) files = await filesFromInput(fileInput.files)
-  if (type === "chat" && !body) return alert("请粘贴要留下的聊天内容")
+  if (type === "chat" && !body) return alert("请贴上想留下的那几句")
   if (type === "note" && !body) return alert("请写一句想记住的话")
   if ((type === "photo" || type === "video" || type === "letter") && !files.length) {
-    return alert("请先选择文件")
+    return alert("请先放入文件")
   }
+  const who = type === "photo" || type === "video" ? (state.about || "her") : "words"
   const entry = {
     id: uid("e"),
     type,
     title,
     body,
+    who,
     happenedAt: when,
     createdAt: Date.now(),
     files
@@ -459,7 +548,7 @@ async function saveCompose() {
     alert(error.message || "保存失败")
     if (btn) {
       btn.disabled = false
-      btn.textContent = "收进故事"
+      btn.textContent = "放进册子"
     }
   }
 }
