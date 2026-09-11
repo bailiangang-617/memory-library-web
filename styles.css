@@ -331,6 +331,7 @@ textarea { min-height: 88px; resize: vertical; }
 .tab.on { color: var(--accent); font-weight: 600; }
 .app.is-book .tab.on { color: var(--accent); }
 body.is-view [data-tab="add"] { display: none; }
+[data-tab="her"] { display: none; }
 .bgm-btn {
   position: fixed;
   left: 14px;
@@ -467,6 +468,9 @@ body.is-view [data-tab="add"] { display: none; }
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin-top: 26px;
+}
+.doors.single {
+  grid-template-columns: 1fr;
 }
 .door {
   display: flex;

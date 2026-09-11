@@ -18,7 +18,7 @@ const state = {
   entries: [],
   view: null,
   compose: "photo",
-  about: "her",
+  about: "us",
   openYears: {},
   fileId: "",
   slide: 0,
@@ -692,25 +692,24 @@ function render() {
   if (state.tab === "add") stashForm()
   applyBackdrop()
   const titles = {
-    door: ["贺紫钦", "二月十七，往后都是"],
-    her: ["紫钦", "她的样子"],
-    us: ["我们", "从那一日的引见说起"],
+    door: ["贺紫钦", "从第一张照片起"],
+    us: ["我们", "从你递来的第一张照片起"],
     add: ["写下", "把那天再放进来"]
   }
+  if (state.tab === "her") state.tab = "us"
   if (!canWrite() && state.tab === "add") state.tab = "door"
   $("app")?.classList.toggle("is-book", state.tab !== "add")
-  $("app")?.classList.toggle("is-remember", state.tab === "her" || state.tab === "us")
+  $("app")?.classList.toggle("is-remember", state.tab === "us")
   document.body.classList.toggle("is-view", !canWrite())
   document.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("on", btn.dataset.tab === state.tab))
   $("page-title").textContent = titles[state.tab][0]
   $("page-sub").textContent = titles[state.tab][1]
   if (state.tab === "add") renderAdd()
-  else if (state.tab === "her") renderHer()
   else if (state.tab === "us") renderUs()
   else renderDoor()
   const main = $("main")
   if (main) {
-    const telling = (state.tab === "her" || state.tab === "us") && (state.tale.phase === "intro" || state.tale.phase === "play")
+    const telling = state.tab === "us" && (state.tale.phase === "intro" || state.tale.phase === "play")
     main.dataset.enter = telling ? "tale" : state.tab === "add" ? "write" : state.tab === "door" ? "door" : "book"
   }
 }
@@ -733,12 +732,11 @@ function renderDoor() {
         <p class="cover-mark">写给贺紫钦</p>
         <h2 class="cover-name">贺紫钦</h2>
         <div class="flourish" aria-hidden="true"><span></span></div>
-        <p class="cover-line">朋友一引，她便来了。花已经开过一季</p>
+        <p class="cover-line">花也买过，信也写过。其实很舍不得。</p>
       </div>
     </section>
-    <div class="doors">
-      ${doorHtml("her", "看她", "她的样子")}
-      ${doorHtml("us", "看我们", "年里四面，其后千里")}
+    <div class="doors single">
+      ${doorHtml("us", "看我们", "第一张照片，到如今")}
     </div>
     ${canWrite() && state.entries.some(isTrial) ? `<p class="sub" style="text-align:center;margin-top:22px"><button class="link" data-act="clear-demo" type="button">清掉试片</button></p>` : ""}
   `
@@ -861,7 +859,7 @@ function beginTale(book, replay) {
 
 function finishTale() {
   stopTaleTimer()
-  const book = state.tale.book || (state.tab === "us" ? "us" : "her")
+  const book = state.tale.book || "us"
   markTaleDone(book)
   state.tale = { book, phase: "wall", index: 0, scenes: state.tale.scenes || [] }
   render()
@@ -999,13 +997,9 @@ function playIntroWords(her) {
   const line = $("tale-line")
   const guide = $("tale-guide")
   const last = $("tale-guide-b")
-  const first = her ? "二月十七以后" : "从朋友那一句介绍说起"
-  const second = her
-    ? "她的样子便常常回来。不是擦肩，是朋友轻轻一引，她便站到了眼前。后来才懂，那一日原是缘分，借了一场引见。"
-    : "年里见过四面，其后隔山隔水，话却夜夜能递到她那里。四月十九，人到广州，把花递过去，爱情才有了着落。"
-  const third = her
-    ? "广州的风，后来又见的几次，都还在心上。先看最近的几页，再把整本册子交给你。"
-    : "后来又见了几次。不算多，却够把日子轻轻叠起来。先看最近走过的，再让回忆自己往前流。"
+  const first = "其实很爱"
+  const second = "从你把第一张照片递过来的那一日起，花开过，信写过，上海的风也吹过你的衣角。紫色戴在你手上，墙纸还是你。有过退票，有过沉默，分别的时候，还是说不完那句不舍。"
+  const third = "你下厨的那天，日子忽然变得很轻。伴手礼你买得很开心，我却在旁边悄悄吃醋。先看最近走过的几页，再让整本册子自己往前流。"
   if (prefersQuietMotion()) {
     if (line) line.textContent = first
     if (guide) guide.textContent = second
@@ -1030,8 +1024,8 @@ function renderTale() {
   if (tale.phase === "intro") {
     $("main").innerHTML = `
       <section class="tale tale-intro">
-        <p class="cover-mark tale-fade">${her ? "先看她" : "先看我们"}</p>
-        <h2 class="cover-name tale-fade late">${her ? "紫钦" : "我们"}</h2>
+        <p class="cover-mark tale-fade">先看我们</p>
+        <h2 class="cover-name tale-fade late">我们</h2>
         <div class="flourish tale-fade late" aria-hidden="true"><span></span></div>
         <div class="tale-letter">
           <p class="cover-line tale-type" id="tale-line"></p>
@@ -1382,7 +1376,7 @@ function renderUs() {
       <button class="cover-mark" data-tab="door" type="button">回到封面</button>
       <h2 class="cover-name">我们</h2>
       <div class="flourish slim" aria-hidden="true"><span></span></div>
-      <p class="cover-line">一场引见起，年里四面，隔水说话。</p>
+      <p class="cover-line">从第一张照片起，到分别时的不舍。</p>
       ${days.length ? `<button class="link quiet" data-act="replay-tale" type="button">从头看</button>` : ""}
     </section>
     ${days.length ? wallHtml(days, capsuleHtml) : `<div class="empty"><p>从初见那一日写起，也好。</p></div>`}
@@ -1392,15 +1386,11 @@ function renderUs() {
 
 function renderAdd() {
   if (state.compose === "video" || state.compose === "chat" || state.compose === "note") state.compose = "photo"
-  if (state.about === "her" && state.compose !== "photo") state.compose = "photo"
+  state.about = "us"
   const type = state.compose
-  const kinds = state.about === "her" ? KINDS.filter((item) => item.type === "photo") : KINDS
+  const kinds = KINDS
   const letterAccept = "image/*,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
   $("main").innerHTML = `
-    <div class="about-row" style="margin-top:8px">
-      <button class="btn ${state.about === "her" ? "primary" : "plain"}" data-about="her" type="button">紫钦</button>
-      <button class="btn ${state.about === "us" ? "primary" : "plain"}" data-about="us" type="button">我们</button>
-    </div>
     <div class="compose-types">
       ${kinds.map((item) => `<button class="btn ${type === item.type ? "primary" : "plain"}" data-compose="${item.type}" type="button">${item.label}</button>`).join("")}
     </div>
@@ -1416,7 +1406,7 @@ function renderAdd() {
         </div>
       ` : ""}
       ${type === "photo" ? draftPreviewHtml("照片和视频可以放在同一组，墙上只占一格。") : draftPreviewHtml("可拍多页手写，也可放入 Word、PDF。")}
-      <button class="btn primary" id="f-save" type="button">放进${state.about === "her" ? "她的册子" : "我们的册子"}</button>
+      <button class="btn primary" id="f-save" type="button">放进我们的册子</button>
     </section>
     <section class="card form">
       <p class="muted">封面背景是屏幕上方一条横幅。选好照片后，会标出这台设备上实际能看见的范围，你再拖框裁好。</p>
@@ -1910,6 +1900,7 @@ function onSheetClick(event) {
 }
 
 function switchTab(tab) {
+  if (tab === "her") tab = "us"
   if (tab === "add" && !canWrite()) return
   if (tab === state.tab && (state.tale.phase === "intro" || state.tale.phase === "play")) {
     finishTale()
@@ -1924,9 +1915,8 @@ function switchTab(tab) {
   state.dayKey = ""
   state.fileId = ""
   state.slide = 0
-  if (tab === "her") state.about = "her"
   if (tab === "us") state.about = "us"
-  if (tab === "her" || tab === "us") beginTale(tab)
+  if (tab === "us") beginTale(tab)
   else state.tale = { book: "", phase: "wall", index: 0, scenes: [] }
   render()
 }
@@ -1937,7 +1927,7 @@ async function onMainClick(event) {
   const about = event.target.closest("[data-about]")
   if (about) {
     state.about = about.dataset.about
-    if (state.about === "her") state.compose = "photo"
+    state.about = "us"
     render()
     return
   }
@@ -1952,7 +1942,7 @@ async function onMainClick(event) {
     const next = compose.dataset.compose
     if (next !== "photo" && next !== "letter") clearDraft()
     state.compose = next
-    if (state.compose === "photo") state.about = state.about || "her"
+    if (state.compose === "photo") state.about = "us"
     render()
     return
   }
@@ -1989,7 +1979,7 @@ async function onMainClick(event) {
     return
   }
   if (act.dataset.act === "replay-tale") {
-    beginTale(state.tab === "us" ? "us" : "her", true)
+    beginTale("us", true)
     render()
     return
   }
@@ -2118,7 +2108,7 @@ async function saveCompose() {
   if ((type === "photo" || type === "letter") && !files.length) {
     return alert(type === "letter" ? "请先拍下或放入这封信" : "请先放入照片或视频")
   }
-  const who = type === "photo" || type === "video" ? (state.about || "her") : "words"
+  const who = type === "photo" || type === "video" ? "us" : "words"
   const entry = {
     id: uid("e"),
     type,
@@ -2138,8 +2128,8 @@ async function saveCompose() {
     const saved = await persistEntry(entry)
     await loadAll()
     clearDraft()
-    state.tab = who === "her" ? "her" : "us"
-    state.about = who === "her" ? "her" : "us"
+    state.tab = "us"
+    state.about = "us"
     stopTaleTimer()
     state.tale = { book: state.tab, phase: "wall", index: 0, scenes: [] }
     render()
