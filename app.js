@@ -391,7 +391,7 @@ function yearFold(year, count, unit) {
 function thumbMedia(file, count) {
   if (!file) return `<span class="thumb-empty">字</span>`
   const video = file.mime.startsWith("video/")
-  return `<span class="thumb ${count > 1 ? "is-set" : ""}">`
+  return `<span class="thumb ${count > 1 ? "is-set" : ""}">
     ${video
       ? `<video src="${fileUrl(file)}" muted playsinline preload="metadata"></video><i class="play-dot" aria-hidden="true"></i>`
       : `<img src="${fileUrl(file)}" alt="" loading="lazy" />`}
