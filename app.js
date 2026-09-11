@@ -253,7 +253,7 @@ function bgmEntry() {
 }
 
 function defaultBgmUrl() {
-  return "./bgm-zi.mp3?v=20260911az"
+  return "./bgm-zi.mp3?v=20260912a"
 }
 
 function bgmUrl() {
@@ -771,6 +771,7 @@ function render() {
   $("app")?.classList.toggle("is-book", state.tab !== "add")
   $("app")?.classList.toggle("is-remember", state.tab === "us")
   document.body.classList.toggle("is-view", !canWrite())
+  document.body.classList.toggle("is-tale", state.tab === "us" && (state.tale.phase === "intro" || state.tale.phase === "play"))
   document.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("on", btn.dataset.tab === state.tab))
   $("page-title").textContent = titles[state.tab][0]
   $("page-sub").textContent = titles[state.tab][1]
@@ -891,7 +892,6 @@ function taleScenes() {
     const titled = day.entries.find((item) => prettyTitle(item)) || day.entries[0]
     const body = day.entries.map((item) => item.body).find((item) => item && item.trim()) || ""
     return {
-      date: formatDay(day.at),
       title: prettyTitle(titled),
       body: taleExcerpt(body),
       file: media[Math.floor(Math.random() * media.length)].file,
@@ -947,10 +947,16 @@ function taleMediaHtml(scene) {
   return `<img class="tale-media incoming ${drift}" src="${fileUrl(scene.file)}" alt="" />`
 }
 
+function looksLikeDayLabel(text) {
+  return /^[正一二三四五六七八九十冬]+月\s*\d{1,2}日$/.test(String(text || "").trim())
+}
+
 function taleWordsHtml(scene) {
+  const title = looksLikeDayLabel(scene.title) ? "" : scene.title
+  const body = String(scene.body || "").split("\n").filter((line) => !looksLikeDayLabel(line)).join("\n").trim()
   return `
-    ${scene.title ? `<h2>${escapeHtml(scene.title)}</h2>` : ""}
-    ${scene.body ? `<p>${escapeHtml(scene.body)}</p>` : ""}
+    ${title ? `<h2>${escapeHtml(title)}</h2>` : ""}
+    ${body ? `<p>${escapeHtml(body)}</p>` : ""}
   `
 }
 
