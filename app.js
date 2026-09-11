@@ -287,8 +287,8 @@ function renderDetail(id) {
   $("main").innerHTML = `
     ${entry.body ? `<section class="card form"><div class="excerpt" style="max-height:none">${escapeHtml(entry.body)}</div></section>` : ""}
     ${files.map((file) => {
-      if (file.mime.startsWith("image/")) return `<img class="hero-img" src="${fileUrl(file)}" alt="${escapeHtml(file.name)}" />`
-      if (file.mime.startsWith("video/")) return `<video class="hero-img" src="${fileUrl(file)}" controls></video>`
+      if (file.mime.startsWith("image/")) return `<div class="media-frame"><img class="hero-img" src="${fileUrl(file)}" alt="${escapeHtml(file.name)}" /></div>`
+      if (file.mime.startsWith("video/")) return `<div class="media-frame"><video class="hero-img" src="${fileUrl(file)}" controls></video></div>`
       if (file.mime === "application/pdf" || /\.pdf$/i.test(file.name)) {
         return `<iframe class="preview-frame" src="${fileUrl(file)}" title="${escapeHtml(file.name)}"></iframe>`
       }

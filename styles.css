@@ -96,13 +96,25 @@ textarea { min-height: 72px; resize: vertical; }
   border-radius: 8px;
   background: var(--line);
 }
+.media-frame {
+  margin-top: 12px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 .hero-img {
   display: block;
-  width: 100%;
+  width: auto;
   height: auto;
+  max-width: 100%;
+  max-height: min(52vh, 420px);
   object-fit: contain;
   border-radius: 8px;
-  background: var(--line);
+  background: transparent;
 }
 .cell .check {
   position: absolute;
@@ -200,13 +212,11 @@ textarea { min-height: 72px; resize: vertical; }
 }
 
 .detail .hero-img {
+  width: auto;
   height: auto;
-  max-height: none;
-  border-radius: 0;
-  margin: 0 -16px;
-  width: calc(100% + 32px);
+  max-width: 100%;
+  max-height: min(52vh, 420px);
   object-fit: contain;
-  background: #111;
 }
 .kv { padding: 8px 16px; margin-top: 12px; }
 .kv-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--line); }
