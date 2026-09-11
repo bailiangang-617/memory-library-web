@@ -977,22 +977,56 @@ function scheduleTale(ms, fn) {
   taleWait = window.setTimeout(fn, ms)
 }
 
+function typeText(el, text, done) {
+  if (!el) return done && done()
+  el.textContent = ""
+  el.classList.add("is-typing")
+  let i = 0
+  const step = () => {
+    if (state.tale.phase !== "intro") return
+    i += 1
+    el.textContent = text.slice(0, i)
+    if (i >= text.length) {
+      el.classList.remove("is-typing")
+      return done && done()
+    }
+    window.setTimeout(step, 86)
+  }
+  step()
+}
+
+function playIntroWords(her) {
+  const line = $("tale-line")
+  const guide = $("tale-guide")
+  const first = her ? "她的样子，又回来了。" : "缘分，借了一场巧合。"
+  const second = her ? "灯还亮着。" : "花还在开。"
+  if (prefersQuietMotion()) {
+    if (line) line.textContent = first
+    if (guide) guide.textContent = second
+    scheduleTale(2000, taleGo)
+    return
+  }
+  typeText(line, first, () => {
+    window.setTimeout(() => {
+      typeText(guide, second, () => scheduleTale(1500, taleGo))
+    }, 420)
+  })
+}
+
 function renderTale() {
   const tale = state.tale
   const her = tale.book === "her"
   if (tale.phase === "intro") {
     $("main").innerHTML = `
       <section class="tale tale-intro">
-        <p class="cover-mark">${her ? "先看她" : "先看我们"}</p>
-        <h2 class="cover-name">${her ? "紫钦" : "我们"}</h2>
-        <div class="flourish" aria-hidden="true"><span></span></div>
-        <p class="cover-line">${her ? "二月十七以后，她的样子便常常回来。" : "一场巧遇起，年里四面，隔水说话。"}</p>
-        <p class="tale-guide">${her
-          ? "先看最近的几页。灯下的侧脸，广州的风，后来又见的几次。看完，整面墙交给你。"
-          : "四月十九，人到广州，花递过去，话也落了地。先把最近走过的慢慢看一遍，再让日子自己往前流。"}</p>
+        <p class="cover-mark tale-fade">${her ? "先看她" : "先看我们"}</p>
+        <h2 class="cover-name tale-fade late">${her ? "紫钦" : "我们"}</h2>
+        <div class="flourish tale-fade late" aria-hidden="true"><span></span></div>
+        <p class="cover-line tale-type" id="tale-line"></p>
+        <p class="tale-guide tale-type" id="tale-guide"></p>
       </section>
     `
-    scheduleTale(4200, taleGo)
+    playIntroWords(her)
     return
   }
   showTaleScene()

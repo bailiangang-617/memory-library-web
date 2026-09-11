@@ -1108,13 +1108,31 @@ body.has-sheet .track { animation-play-state: paused; }
   padding: 8px 16px 24px;
 }
 .tale-intro { flex-direction: column; text-align: center; }
+.tale-fade { animation: cover-rise 0.9s ease both; }
+.tale-fade.late { animation-delay: 0.28s; }
+.tale-type {
+  min-height: 1.6em;
+}
+.tale-type.is-typing::after {
+  content: "▍";
+  margin-left: 2px;
+  color: var(--gold);
+  animation: tale-caret 0.9s step-end infinite;
+}
+@keyframes tale-caret {
+  50% { opacity: 0; }
+}
+.tale-intro .cover-line {
+  margin-top: 18px;
+  letter-spacing: 0.2em;
+}
 .tale-guide {
-  max-width: 28em;
-  margin: 14px auto 0;
+  max-width: 22em;
+  margin: 16px auto 0;
   color: var(--muted);
-  font-size: 14px;
-  line-height: 1.85;
-  letter-spacing: 0.06em;
+  font-size: 15px;
+  line-height: 1.9;
+  letter-spacing: 0.16em;
 }
 .tale-actions {
   display: grid;
