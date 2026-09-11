@@ -253,7 +253,7 @@ function bgmEntry() {
 }
 
 function defaultBgmUrl() {
-  return "./bgm-zi.mp3?v=20260912c"
+  return "./bgm-zi.mp3?v=20260912d"
 }
 
 function bgmUrl() {
@@ -807,7 +807,6 @@ function renderDoor() {
     <div class="doors single">
       ${doorHtml("us", "看我们", "第一张照片，到如今")}
     </div>
-    ${canWrite() && state.entries.some(isTrial) ? `<p class="sub" style="text-align:center;margin-top:22px"><button class="link" data-act="clear-demo" type="button">清掉试片</button></p>` : ""}
   `
 }
 
@@ -2082,7 +2081,7 @@ async function onMainClick(event) {
     render()
     return
   }
-  if (!canWrite() && ["edit-words", "use-backdrop", "clear-backdrop", "clear-bgm", "delete", "clear-demo", "clear", "save-edit"].includes(act.dataset.act)) return
+  if (!canWrite() && ["edit-words", "use-backdrop", "clear-backdrop", "clear-bgm", "delete", "clear-demo", "clear", "save-edit", "demo"].includes(act.dataset.act)) return
   if (act.dataset.act === "back" || act.dataset.act === "close-sheet") {
     closeSheet()
     return
@@ -2146,30 +2145,7 @@ async function onMainClick(event) {
     }
     return
   }
-  if (act.dataset.act === "demo") {
-    try {
-      await loadDemo()
-    } catch (error) {
-      alert(error.message || "示例载入失败")
-    }
-    return
-  }
-  if (act.dataset.act === "clear-demo") {
-    const trials = state.entries.filter(isTrial)
-    if (!trials.length) return
-    if (!confirm("只清掉试片，你自己放进来的会留着。")) return
-    try {
-      for (const entry of trials) {
-        if (Cloud.on()) await Cloud.remove(entry)
-        else await deleteEntry(entry.id)
-      }
-      await loadAll()
-      render()
-    } catch (error) {
-      alert(error.message || "清掉试片失败")
-    }
-    return
-  }
+  if (act.dataset.act === "demo" || act.dataset.act === "clear-demo") return
   if (act.dataset.act === "clear") {
     if (!confirm(Cloud.on() ? "将清空云端全部点滴，所有人都看不到。" : "将清空这台浏览器里的全部点滴。")) return
     try {
