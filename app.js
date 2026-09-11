@@ -381,6 +381,7 @@ function renderDoor() {
         <em>两个人走过的日子</em>
       </button>
     </div>
+    ${state.entries.some(isTrial) ? `<p class="sub" style="text-align:center;margin-top:22px"><button class="link" data-act="clear-demo" type="button">清掉试片</button></p>` : ""}
   `
 }
 
@@ -401,6 +402,7 @@ function polaroidHtml(tile, index) {
         : `<img src="${fileUrl(tile.file)}" alt="" loading="lazy" />`}
     </span>
     <span>${formatDay(tile.entry.happenedAt)}</span>
+    <i class="linger-hint">停一停，再打开</i>
   </button>`
 }
 
@@ -422,6 +424,7 @@ function renderHer() {
         ${open ? `<div class="wall">${block.items.map((tile, i) => polaroidHtml(tile, start + i)).join("")}</div>` : ""}`
     }).join("") : `<div class="empty"><p>还没把她的样子放进来。</p></div>`}
   `
+  updateLinger()
 }
 
 function capsuleHtml(day) {
@@ -440,6 +443,7 @@ function capsuleHtml(day) {
       <p class="leaf-date">${formatDay(day.at)}</p>
       ${title ? `<h3>${escapeHtml(title)}</h3>` : ""}
       ${body && !title ? `<div class="excerpt">${escapeHtml(body)}</div>` : ""}
+      <i class="linger-hint">停在这一天</i>
     </div>
   </button>`
 }
@@ -458,10 +462,11 @@ function renderUs() {
       return `${yearFold(block.year, count, "天")}
         ${open ? block.seasons.map((season) => `
           <div class="chapter">${season.label}</div>
-          ${season.days.map(capsuleHtml).join("")}
+          <div class="capsule-row">${season.days.map(capsuleHtml).join("")}</div>
         `).join("") : ""}`
     }).join("") : `<div class="empty"><p>还没把那天写进来。</p></div>`}
   `
+  updateLinger()
 }
 
 function renderAdd() {
@@ -635,6 +640,44 @@ function renderDayLook(key) {
   })
 }
 
+function isTrial(entry) {
+  return !!entry.demo || String(entry.title || "").startsWith("试片")
+}
+
+let lingerWait = 0
+
+function updateLinger() {
+  const items = Array.from(document.querySelectorAll(".polaroid, .capsule"))
+  if (!items.length) return
+  const hovered = items.find((el) => el.matches(":hover"))
+  const mid = window.innerHeight * 0.42
+  let best = hovered || null
+  let bestDist = Infinity
+  if (!hovered) {
+    for (const el of items) {
+      const box = el.getBoundingClientRect()
+      if (box.bottom < 88 || box.top > window.innerHeight - 88) continue
+      const dist = Math.abs((box.top + box.bottom) / 2 - mid)
+      if (dist < bestDist) {
+        bestDist = dist
+        best = el
+      }
+    }
+  }
+  for (const el of items) {
+    el.classList.toggle("is-lingering", el === best)
+  }
+}
+
+function queueLinger(immediate) {
+  window.clearTimeout(lingerWait)
+  if (immediate) {
+    updateLinger()
+    return
+  }
+  lingerWait = window.setTimeout(updateLinger, 180)
+}
+
 function bindEvents() {
   if ($("gate-btn")) $("gate-btn").addEventListener("click", unlock)
   if ($("gate-input")) {
@@ -649,6 +692,20 @@ function bindEvents() {
   })
   $("main")?.addEventListener("click", onMainClick)
   $("main")?.addEventListener("change", onMainChange)
+  $("main")?.addEventListener("pointerover", (event) => {
+    const item = event.target.closest(".polaroid, .capsule")
+    if (!item) return
+    queueLinger(true)
+  })
+  $("main")?.addEventListener("pointerout", (event) => {
+    const item = event.target.closest(".polaroid, .capsule")
+    if (!item) return
+    const next = event.relatedTarget && event.relatedTarget.closest && event.relatedTarget.closest(".polaroid, .capsule")
+    if (next === item) return
+    queueLinger(true)
+  })
+  window.addEventListener("scroll", () => queueLinger(false), { passive: true })
+  window.addEventListener("resize", () => queueLinger(true))
 }
 
 function unlock() {
@@ -765,6 +822,22 @@ async function onMainClick(event) {
       await loadDemo()
     } catch (error) {
       alert(error.message || "示例载入失败")
+    }
+    return
+  }
+  if (act.dataset.act === "clear-demo") {
+    const trials = state.entries.filter(isTrial)
+    if (!trials.length) return
+    if (!confirm("只清掉试片，你自己放进来的会留着。")) return
+    try {
+      for (const entry of trials) {
+        if (Cloud.on()) await Cloud.remove(entry)
+        else await deleteEntry(entry.id)
+      }
+      await loadAll()
+      render()
+    } catch (error) {
+      alert(error.message || "清掉试片失败")
     }
     return
   }
