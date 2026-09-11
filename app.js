@@ -875,11 +875,100 @@ function taleGo() {
   render()
 }
 
+function taleHold(scene) {
+  const n = String(scene?.body || "").length
+  return Math.min(9800, Math.max(6800, 4800 + n * 36))
+}
+
+function taleMediaHtml(scene) {
+  const video = scene.file && scene.file.mime.startsWith("video/")
+  const drift = state.tale.index % 2 ? "drift-b" : "drift-a"
+  if (video) return `<video class="tale-media incoming" src="${fileUrl(scene.file)}" muted playsinline autoplay></video>`
+  return `<img class="tale-media incoming ${drift}" src="${fileUrl(scene.file)}" alt="" />`
+}
+
+function taleWordsHtml(scene) {
+  return `
+    <p class="tale-date">${escapeHtml(scene.date)}</p>
+    ${scene.title ? `<h2>${escapeHtml(scene.title)}</h2>` : ""}
+    ${scene.body ? `<p>${escapeHtml(scene.body)}</p>` : ""}
+  `
+}
+
+function paintTaleStage() {
+  $("main").innerHTML = `
+    <section class="tale tale-play">
+      <div class="tale-stage" data-act="tale-next">
+        <div class="tale-film" id="tale-film"></div>
+        <div class="tale-veil"></div>
+        <div class="tale-words" id="tale-words"></div>
+        <i class="tale-bar" id="tale-bar"></i>
+        <div class="tale-dots" id="tale-dots"></div>
+        <button class="link quiet tale-skip" data-act="skip-tale" type="button">自己翻</button>
+      </div>
+    </section>
+  `
+}
+
+function showTaleScene() {
+  const tale = state.tale
+  const scene = tale.scenes[tale.index]
+  if (!scene) return finishTale()
+  if (!$("tale-film")) paintTaleStage()
+  const film = $("tale-film")
+  const words = $("tale-words")
+  const bar = $("tale-bar")
+  const dots = $("tale-dots")
+  film.querySelectorAll(".tale-media").forEach((el) => {
+    el.classList.remove("live", "incoming")
+    el.classList.add("leaving")
+  })
+  film.insertAdjacentHTML("beforeend", taleMediaHtml(scene))
+  const incoming = film.querySelector(".tale-media.incoming")
+  window.requestAnimationFrame(() => {
+    incoming?.classList.add("live")
+    incoming?.classList.remove("incoming")
+  })
+  window.setTimeout(() => {
+    film.querySelectorAll(".tale-media.leaving").forEach((el) => el.remove())
+  }, 1200)
+  if (words) {
+    words.classList.remove("is-on")
+    words.innerHTML = taleWordsHtml(scene)
+    window.requestAnimationFrame(() => words.classList.add("is-on"))
+  }
+  if (dots) {
+    dots.innerHTML = tale.scenes.map((_, i) => `<i class="${i === tale.index ? "on" : ""}"></i>`).join("")
+  }
+  const hold = taleHold(scene)
+  if (bar) {
+    bar.classList.remove("run")
+    bar.style.setProperty("--tale-hold", `${hold}ms`)
+    void bar.offsetWidth
+    bar.classList.add("run")
+  }
+  const video = incoming && incoming.tagName === "VIDEO"
+  if (video) {
+    incoming.addEventListener("ended", () => {
+      if (state.tale.phase === "play") taleNext()
+    }, { once: true })
+    scheduleTale(10000, taleNext)
+    return
+  }
+  scheduleTale(hold, taleNext)
+}
+
 function taleNext() {
   stopTaleTimer()
-  if (state.tale.index >= state.tale.scenes.length - 1) return finishTale()
-  state.tale.index += 1
-  render()
+  if (state.tale.phase !== "play") return
+  const words = $("tale-words")
+  if (words) words.classList.remove("is-on")
+  window.setTimeout(() => {
+    if (state.tale.phase !== "play") return
+    if (state.tale.index >= state.tale.scenes.length - 1) return finishTale()
+    state.tale.index += 1
+    showTaleScene()
+  }, 420)
 }
 
 function scheduleTale(ms, fn) {
@@ -910,35 +999,7 @@ function renderTale() {
     scheduleTale(5600, taleGo)
     return
   }
-  const scene = tale.scenes[tale.index]
-  if (!scene) return finishTale()
-  const video = scene.file && scene.file.mime.startsWith("video/")
-  $("main").innerHTML = `
-    <section class="tale tale-play">
-      <div class="tale-stage">
-        ${video
-          ? `<video class="tale-media" src="${fileUrl(scene.file)}" muted playsinline autoplay></video>`
-          : `<img class="tale-media" src="${fileUrl(scene.file)}" alt="" />`}
-        <div class="tale-veil"></div>
-        <div class="tale-words">
-          <p class="tale-date">${escapeHtml(scene.date)}</p>
-          ${scene.title ? `<h2>${escapeHtml(scene.title)}</h2>` : ""}
-          ${scene.body ? `<p>${escapeHtml(scene.body)}</p>` : ""}
-        </div>
-        <div class="tale-dots">${tale.scenes.map((_, i) => `<i class="${i === tale.index ? "on" : ""}"></i>`).join("")}</div>
-        <button class="link quiet tale-skip" data-act="skip-tale" type="button">自己翻</button>
-      </div>
-    </section>
-  `
-  const media = document.querySelector(".tale-media")
-  if (video && media) {
-    media.addEventListener("ended", () => {
-      if (state.tale.phase === "play" && state.tale.index === tale.index) taleNext()
-    }, { once: true })
-    scheduleTale(9000, taleNext)
-    return
-  }
-  scheduleTale(6200, taleNext)
+  showTaleScene()
 }
 
 function renderHer() {
@@ -1867,6 +1928,10 @@ async function onMainClick(event) {
   if (!act) return
   if (act.dataset.act === "tale-go") {
     taleGo()
+    return
+  }
+  if (act.dataset.act === "tale-next") {
+    taleNext()
     return
   }
   if (act.dataset.act === "skip-tale") {

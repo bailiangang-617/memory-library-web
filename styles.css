@@ -1125,12 +1125,32 @@ body.has-sheet .track { animation-play-state: paused; }
   border-radius: 8px 8px 22px 22px;
   background: #2c2236;
 }
+.tale-film {
+  position: absolute;
+  inset: 0;
+}
 .tale-media {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  height: min(72vh, 640px);
+  height: 100%;
   object-fit: cover;
   object-position: center 28%;
+  opacity: 0;
+  transition: opacity 1.15s ease;
+}
+.tale-media.live { opacity: 1; }
+.tale-media.leaving { opacity: 0; }
+.tale-media.live.drift-a { animation: tale-drift-a 9s ease-out forwards; }
+.tale-media.live.drift-b { animation: tale-drift-b 9s ease-out forwards; }
+@keyframes tale-drift-a {
+  from { transform: scale(1.05) translate3d(0, 0, 0); }
+  to { transform: scale(1.14) translate3d(2.2%, -1.6%, 0); }
+}
+@keyframes tale-drift-b {
+  from { transform: scale(1.13) translate3d(-1.8%, 1.2%, 0); }
+  to { transform: scale(1.04) translate3d(1.4%, -0.8%, 0); }
 }
 .tale-veil {
   position: absolute;
@@ -1145,6 +1165,18 @@ body.has-sheet .track { animation-play-state: paused; }
   bottom: 36px;
   color: #fffafd;
   text-shadow: 0 1px 12px rgba(44, 34, 54, 0.45);
+}
+.tale-words .tale-date,
+.tale-words h2,
+.tale-words p {
+  opacity: 0;
+}
+.tale-words.is-on .tale-date { animation: tale-line 0.9s 0.35s ease both; }
+.tale-words.is-on h2 { animation: tale-line 1s 1.05s ease both; }
+.tale-words.is-on p { animation: tale-line 1.1s 1.85s ease both; }
+@keyframes tale-line {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
 }
 .tale-date {
   margin: 0;
@@ -1165,14 +1197,37 @@ body.has-sheet .track { animation-play-state: paused; }
   line-height: 1.75;
   font-size: 14px;
 }
+.tale-bar {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 10px;
+  height: 1px;
+  background: rgba(255, 250, 253, 0.18);
+  overflow: hidden;
+}
+.tale-bar::after {
+  content: "";
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--gold);
+}
+.tale-bar.run::after {
+  animation: tale-bar var(--tale-hold, 7s) linear forwards;
+}
+@keyframes tale-bar {
+  to { width: 100%; }
+}
 .tale-dots {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 12px;
+  bottom: 16px;
   display: flex;
   justify-content: center;
   gap: 6px;
+  pointer-events: none;
 }
 .tale-dots i {
   width: 6px;
@@ -1231,7 +1286,10 @@ body.has-sheet .track { animation-play-state: paused; }
   .sheet-card,
   .about-row,
   .compose-types,
-  .form {
+  .form,
+  .tale-media.live.drift-a,
+  .tale-media.live.drift-b,
+  .tale-bar.run::after {
     animation: none !important;
     transition: none !important;
   }
