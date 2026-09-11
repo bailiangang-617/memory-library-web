@@ -500,10 +500,8 @@ async function clearBackdrop() {
   applyBackdrop()
 }
 
-function bookEntries(who) {
-  const list = state.entries.filter((item) => !isBackdrop(item))
-  if (who === "her") return list.filter((item) => inferWho(item) === "her")
-  return list.filter((item) => inferWho(item) !== "her")
+function bookEntries() {
+  return state.entries.filter((item) => !isBackdrop(item) && !isTrial(item))
 }
 
 function mediaFiles(entry) {
@@ -520,26 +518,13 @@ function dayKey(ts) {
 }
 
 function latestBookYear() {
-  if (state.tab === "her") {
-    const first = groupByYear(herCards())[0]
-    return first && first.year
-  }
-  const first = usYearGroups(bookEntries("us"))[0]
+  const first = usYearGroups(bookEntries())[0]
   return first && first.year
 }
 
 function isYearOpen(year) {
   if (Object.prototype.hasOwnProperty.call(state.openYears, year)) return !!state.openYears[year]
   return year === latestBookYear()
-}
-
-function herCards() {
-  return bookEntries("her").map((entry) => ({
-    entry,
-    year: entryYear(entry),
-    cover: mediaFiles(entry)[0] || null,
-    count: mediaFiles(entry).length
-  }))
 }
 
 function groupByYear(cards) {
@@ -603,8 +588,8 @@ function bindLookSwipe(onStep) {
   })
 }
 
-function coverPhoto(who) {
-  const list = who ? bookEntries(who) : state.entries
+function coverPhoto() {
+  const list = bookEntries()
   for (const entry of list) {
     const photo = (entry.files || []).find((file) => file.mime.startsWith("image/"))
     if (photo) return photo
@@ -697,7 +682,7 @@ function render() {
     add: ["写下", "把那天再放进来"]
   }
   if (state.tab === "her") state.tab = "us"
-  if (!canWrite() && state.tab === "add") state.tab = "door"
+  if (!canWrite() && state.tab === "add") state.tab = "us"
   $("app")?.classList.toggle("is-book", state.tab !== "add")
   $("app")?.classList.toggle("is-remember", state.tab === "us")
   document.body.classList.toggle("is-view", !canWrite())
@@ -715,7 +700,7 @@ function render() {
 }
 
 function doorHtml(who, name, line) {
-  const photo = coverPhoto(who)
+  const photo = coverPhoto()
   return `<button class="door ${photo ? "has-film" : ""}" data-tab="${who}" type="button">
     ${photo ? `<i class="door-film"><img src="${fileUrl(photo)}" alt="" /></i>` : ""}
     <span class="door-copy">
@@ -761,15 +746,6 @@ function thumbMedia(file, count) {
   </span>`
 }
 
-function polaroidHtml(card) {
-  return `<button class="polaroid" data-open="${card.entry.id}" type="button">
-    <span class="film">
-      ${thumbMedia(card.cover, card.count)}
-      <span class="film-cap"><i>${formatDay(card.entry.happenedAt)}</i></span>
-    </span>
-  </button>`
-}
-
 function splitRows(items, rows) {
   const out = Array.from({ length: rows }, () => [])
   if (!items.length) return out
@@ -809,19 +785,7 @@ function taleExcerpt(text) {
 }
 
 function taleScenes(book) {
-  if (book === "her") {
-    return herCards()
-      .filter((card) => card.cover)
-      .slice(0, 4)
-      .map((card) => ({
-        date: formatDay(card.entry.happenedAt),
-        title: prettyTitle(card.entry),
-        body: taleExcerpt(card.entry.body),
-        file: card.cover,
-        open: card.entry.id
-      }))
-  }
-  return usYearGroups(bookEntries("us"))
+  return usYearGroups(bookEntries())
     .flatMap((block) => block.seasons.flatMap((season) => season.days))
     .filter((day) => dayMedia(day).length)
     .slice(0, 4)
@@ -993,7 +957,7 @@ function typeText(el, text, done) {
   step()
 }
 
-function playIntroWords(her) {
+function playIntroWords() {
   const line = $("tale-line")
   const guide = $("tale-guide")
   const last = $("tale-guide-b")
@@ -1020,7 +984,6 @@ function playIntroWords(her) {
 
 function renderTale() {
   const tale = state.tale
-  const her = tale.book === "her"
   if (tale.phase === "intro") {
     $("main").innerHTML = `
       <section class="tale tale-intro">
@@ -1034,28 +997,10 @@ function renderTale() {
         </div>
       </section>
     `
-    playIntroWords(her)
+    playIntroWords()
     return
   }
   showTaleScene()
-}
-
-function renderHer() {
-  if (state.tale.book === "her" && (state.tale.phase === "intro" || state.tale.phase === "play")) {
-    return renderTale()
-  }
-  const cards = herCards()
-  $("main").innerHTML = `
-    <section class="book-head">
-      <button class="cover-mark" data-tab="door" type="button">回到封面</button>
-      <h2 class="cover-name">紫钦</h2>
-      <div class="flourish slim" aria-hidden="true"><span></span></div>
-      <p class="cover-line">二月十七以后，她的样子便常常回来。</p>
-      ${cards.length ? `<button class="link quiet" data-act="replay-tale" type="button">从头看</button>` : ""}
-    </section>
-    ${cards.length ? wallHtml(cards, polaroidHtml) : `<div class="empty"><p>她的样子，还等你放进来。</p></div>`}
-  `
-  bindWalls()
 }
 
 function capsuleHtml(day) {
@@ -1071,7 +1016,7 @@ function capsuleHtml(day) {
 }
 
 function findDay(key) {
-  return usYearGroups(bookEntries("us"))
+  return usYearGroups(bookEntries())
     .flatMap((block) => block.seasons.flatMap((season) => season.days))
     .find((item) => item.key === key)
 }
@@ -1159,8 +1104,7 @@ async function saveSheetEdit() {
   render()
   const first = state.entries.find((item) => item.id === (viewId || ids[0]))
   if (viewId && first) openEntrySheet(viewId)
-  else if (first && inferWho(first) !== "her") openDaySheet(dayKey(first.happenedAt))
-  else if (first) openEntrySheet(first.id)
+  else if (first) openDaySheet(dayKey(first.happenedAt))
 }
 
 function albumIndex() {
@@ -1370,7 +1314,7 @@ function renderUs() {
   if (state.tale.book === "us" && (state.tale.phase === "intro" || state.tale.phase === "play")) {
     return renderTale()
   }
-  const days = usYearGroups(bookEntries("us")).flatMap((block) => block.seasons.flatMap((season) => season.days))
+  const days = usYearGroups(bookEntries()).flatMap((block) => block.seasons.flatMap((season) => season.days))
   $("main").innerHTML = `
     <section class="book-head">
       <button class="cover-mark" data-tab="door" type="button">回到封面</button>
@@ -1391,6 +1335,7 @@ function renderAdd() {
   const kinds = KINDS
   const letterAccept = "image/*,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
   $("main").innerHTML = `
+    <button class="cover-mark" data-tab="us" type="button">回到我们</button>
     <div class="compose-types">
       ${kinds.map((item) => `<button class="btn ${type === item.type ? "primary" : "plain"}" data-compose="${item.type}" type="button">${item.label}</button>`).join("")}
     </div>
@@ -1521,23 +1466,6 @@ function renderDetail(id) {
     state.view = null
     return render()
   }
-  if (inferWho(entry) === "her") {
-    const gallery = mediaFiles(entry).map((file) => ({ entry, file }))
-    if (state.fileId) {
-      const found = gallery.findIndex((tile) => tile.file.id === state.fileId)
-      if (found >= 0) state.slide = found
-    }
-    state.slide = Math.min(state.slide, Math.max(gallery.length - 1, 0))
-    renderLookPage({
-      title: prettyTitle(entry) || "紫钦",
-      date: formatDay(entry.happenedAt),
-      words: entry.body ? `<section class="letter-sheet">${escapeHtml(entry.body)}</section>` : "",
-      gallery,
-      docs: "",
-      deleteId: entry.id
-    })
-    return
-  }
   const gallery = mediaFiles(entry).map((file) => ({ entry, file }))
   state.slide = Math.min(state.slide, Math.max(gallery.length - 1, 0))
   renderLookPage({
@@ -1551,7 +1479,7 @@ function renderDetail(id) {
 }
 
 function renderDayLook(key) {
-  const days = usYearGroups(bookEntries("us")).flatMap((block) => block.seasons.flatMap((season) => season.days))
+  const days = usYearGroups(bookEntries()).flatMap((block) => block.seasons.flatMap((season) => season.days))
   const day = days.find((item) => item.key === key)
   if (!day) {
     state.dayKey = ""

@@ -309,6 +309,7 @@ textarea { min-height: 88px; resize: vertical; }
   bottom: 0;
   z-index: 20;
   display: flex;
+  justify-content: flex-end;
   background: rgba(255, 250, 253, 0.92);
   border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom);
@@ -320,18 +321,17 @@ textarea { min-height: 88px; resize: vertical; }
   backdrop-filter: none;
 }
 .tab {
-  flex: 1;
+  flex: 0 0 auto;
   border: 0;
   background: none;
   color: var(--muted);
-  padding: 12px 0;
+  padding: 12px 22px;
   letter-spacing: 0.16em;
 }
 .app.is-book .tab { color: rgba(138, 122, 150, 0.62); font-weight: 400; }
 .tab.on { color: var(--accent); font-weight: 600; }
 .app.is-book .tab.on { color: var(--accent); }
-body.is-view [data-tab="add"] { display: none; }
-[data-tab="her"] { display: none; }
+body.is-view .tabbar { display: none; }
 .bgm-btn {
   position: fixed;
   left: 14px;
