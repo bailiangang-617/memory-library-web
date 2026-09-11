@@ -344,14 +344,10 @@ function render() {
     us: ["我们", "与你的日子"],
     add: ["写下", "先选这是紫钦，还是我们"]
   }
-  $("app")?.classList.toggle("is-book", !state.view && !state.dayKey && state.tab !== "add")
+  $("app")?.classList.toggle("is-book", state.tab !== "add")
   document.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("on", btn.dataset.tab === state.tab))
-  if (!state.view) {
-    $("page-title").textContent = titles[state.tab][0]
-    $("page-sub").textContent = titles[state.tab][1]
-  }
-  if (state.dayKey) return renderDayLook(state.dayKey)
-  if (state.view) return renderDetail(state.view)
+  $("page-title").textContent = titles[state.tab][0]
+  $("page-sub").textContent = titles[state.tab][1]
   if (state.tab === "add") return renderAdd()
   if (state.tab === "her") return renderHer()
   if (state.tab === "us") return renderUs()
@@ -395,7 +391,7 @@ function yearFold(year, count, unit) {
 function thumbMedia(file, count) {
   if (!file) return `<span class="thumb-empty">字</span>`
   const video = file.mime.startsWith("video/")
-  return `<span class="thumb">
+  return `<span class="thumb ${count > 1 ? "is-set" : ""}">`
     ${video
       ? `<video src="${fileUrl(file)}" muted playsinline preload="metadata"></video><i class="play-dot" aria-hidden="true"></i>`
       : `<img src="${fileUrl(file)}" alt="" loading="lazy" />`}
@@ -404,9 +400,11 @@ function thumbMedia(file, count) {
 }
 
 function polaroidHtml(card) {
+  const title = prettyTitle(card.entry)
   return `<button class="polaroid" data-open="${card.entry.id}" type="button">
     ${thumbMedia(card.cover, card.count)}
     <span>${formatDay(card.entry.happenedAt)}</span>
+    ${title ? `<b>${escapeHtml(title)}</b>` : ""}
   </button>`
 }
 
@@ -436,7 +434,7 @@ function renderHer() {
     <section class="book-head">
       <button class="cover-mark" data-tab="door" type="button">回到封面</button>
       <h2 class="cover-name">紫钦</h2>
-      <p class="cover-line">墙自己走，停在谁身上再点开</p>
+      <p class="cover-line">一格是一组，点开看全集</p>
     </section>
     ${cards.length ? wallHtml(cards, polaroidHtml) : `<div class="empty"><p>还没把她的样子放进来。</p></div>`}
   `
@@ -456,13 +454,111 @@ function capsuleHtml(day) {
   </button>`
 }
 
+function findDay(key) {
+  return usYearGroups(bookEntries("us"))
+    .flatMap((block) => block.seasons.flatMap((season) => season.days))
+    .find((item) => item.key === key)
+}
+
+function albumWords(entries) {
+  const blocks = (entries || []).map((entry) => {
+    const title = prettyTitle(entry)
+    const body = entry.body
+    if (!title && !body) return ""
+    return `<section class="sheet-letter">
+      ${title ? `<h3>${escapeHtml(title)}</h3>` : ""}
+      ${body ? `<p>${escapeHtml(body)}</p>` : ""}
+    </section>`
+  }).join("")
+  return blocks || `<p class="muted">还没写下字。</p>`
+}
+
+function albumPhotos(gallery) {
+  if (!gallery.length) return `<p class="muted">这一组还没有照片。</p>`
+  return gallery.map((tile) => {
+    if (tile.file.mime.startsWith("video/")) {
+      return `<video src="${fileUrl(tile.file)}" controls playsinline preload="metadata"></video>`
+    }
+    return `<img src="${fileUrl(tile.file)}" alt="" />`
+  }).join("")
+}
+
+function closeSheet() {
+  const sheet = $("sheet")
+  if (!sheet) return
+  sheet.classList.add("hidden")
+  sheet.innerHTML = ""
+  document.body.classList.remove("has-sheet")
+  state.view = null
+  state.dayKey = ""
+  state.fileId = ""
+  state.slide = 0
+}
+
+function openSheet({ title, date, gallery, entries, deleteId }) {
+  const sheet = $("sheet")
+  if (!sheet) return
+  document.body.classList.add("has-sheet")
+  sheet.classList.remove("hidden")
+  sheet.innerHTML = `
+    <div class="sheet-card">
+      <div class="sheet-top">
+        <div>
+          <p class="sheet-date">${escapeHtml(date)}</p>
+          <h2>${escapeHtml(title)}</h2>
+        </div>
+        <button class="link" data-act="close-sheet" type="button">关闭</button>
+      </div>
+      <div class="sheet-split">
+        <aside class="sheet-photos">${albumPhotos(gallery)}</aside>
+        <article class="sheet-words">
+          ${albumWords(entries)}
+          ${entries.map((entry) => fileDocs(entry.files)).join("")}
+        </article>
+      </div>
+      <div class="sheet-actions">
+        ${deleteId ? `<button class="btn danger" data-act="delete" data-id="${deleteId}" type="button">删除这一组</button>` : ""}
+      </div>
+    </div>
+  `
+}
+
+function openEntrySheet(id) {
+  const entry = state.entries.find((item) => item.id === id)
+  if (!entry) return
+  state.view = id
+  state.dayKey = ""
+  openSheet({
+    title: prettyTitle(entry) || (inferWho(entry) === "her" ? "这一组" : "这个故事"),
+    date: formatDay(entry.happenedAt),
+    gallery: mediaFiles(entry).map((file) => ({ entry, file })),
+    entries: [entry],
+    deleteId: entry.id
+  })
+}
+
+function openDaySheet(key) {
+  const day = findDay(key)
+  if (!day) return
+  state.dayKey = key
+  state.view = null
+  const titled = day.entries.find((item) => prettyTitle(item))
+  openSheet({
+    title: prettyTitle(titled || day.entries[0]) || "那天",
+    date: formatDay(day.at),
+    gallery: dayMedia(day),
+    entries: day.entries,
+    deleteId: day.entries.length === 1 ? day.entries[0].id : ""
+  })
+}
+
 function renderUs() {
   const days = usYearGroups(bookEntries("us")).flatMap((block) => block.seasons.flatMap((season) => season.days))
   $("main").innerHTML = `
     <section class="book-head">
       <button class="cover-mark" data-tab="door" type="button">回到封面</button>
       <h2 class="cover-name">我们</h2>
-      <p class="cover-line">墙自己走，停在那天再点开</p>
+      <p class="cover-line">一格是一天的故事，点开看全集</p>
     </section>
     ${days.length ? wallHtml(days, capsuleHtml) : `<div class="empty"><p>还没把那天写进来。</p></div>`}
   `
@@ -763,6 +859,10 @@ function bindEvents() {
     switchTab(tab.dataset.tab)
   })
   $("main")?.addEventListener("click", onMainClick)
+  $("sheet")?.addEventListener("click", onSheetClick)
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeSheet()
+  })
   $("main")?.addEventListener("change", onMainChange)
   $("main")?.addEventListener("pointerover", (event) => {
     const item = event.target.closest(".polaroid, .capsule")
@@ -790,7 +890,16 @@ function unlock() {
   $("app").classList.remove("hidden")
 }
 
+function onSheetClick(event) {
+  if (event.target.id === "sheet" || event.target.closest("[data-act='close-sheet']")) {
+    closeSheet()
+    return
+  }
+  onMainClick(event)
+}
+
 function switchTab(tab) {
+  closeSheet()
   state.tab = tab
   state.view = null
   state.dayKey = ""
@@ -827,51 +936,19 @@ async function onMainClick(event) {
   }
   const dayBtn = event.target.closest("[data-day]")
   if (dayBtn) {
-    state.dayKey = dayBtn.dataset.day
-    state.view = null
-    state.slide = 0
-    render()
-    return
-  }
-  const jump = event.target.closest("[data-slide-to]")
-  if (jump) {
-    state.slide = Number(jump.dataset.slideTo)
-    render()
-    return
-  }
-  const stepBtn = event.target.closest("[data-slide-step]")
-  if (stepBtn) {
-    const gallery = state.dayKey
-      ? dayMedia((usYearGroups(bookEntries("us")).flatMap((block) => block.seasons.flatMap((season) => season.days)).find((item) => item.key === state.dayKey) || { entries: [] }))
-      : mediaFiles(state.entries.find((item) => item.id === state.view) || { files: [] }).map((file) => ({ entry: state.entries.find((item) => item.id === state.view), file }))
-    if (!gallery.length) return
-    state.slide = (state.slide + Number(stepBtn.dataset.slideStep) + gallery.length) % gallery.length
-    const next = gallery[state.slide]
-    if (next && next.entry) {
-      state.view = state.dayKey ? null : next.entry.id
-      state.fileId = next.file.id || ""
-    }
-    render()
+    openDaySheet(dayBtn.dataset.day)
     return
   }
   const open = event.target.closest("[data-open]")
   if (open) {
-    state.view = open.dataset.open
-    state.fileId = open.dataset.file || ""
-    state.slide = Number(open.dataset.slide || 0)
-    state.dayKey = ""
-    render()
+    openEntrySheet(open.dataset.open)
     return
   }
   if (event.target.id === "f-save") return saveCompose()
   const act = event.target.closest("[data-act]")
   if (!act) return
-  if (act.dataset.act === "back") {
-    state.view = null
-    state.dayKey = ""
-    state.fileId = ""
-    state.slide = 0
-    render()
+  if (act.dataset.act === "back" || act.dataset.act === "close-sheet") {
+    closeSheet()
     return
   }
   if (act.dataset.act === "delete") {
@@ -885,8 +962,7 @@ async function onMainClick(event) {
       if (Cloud.on()) await Cloud.remove(target)
       else await deleteEntry(act.dataset.id)
       await loadAll()
-      state.view = null
-      state.dayKey = ""
+      closeSheet()
       render()
     } catch (error) {
       alert(error.message || "删除失败")
