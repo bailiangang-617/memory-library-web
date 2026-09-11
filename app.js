@@ -24,7 +24,8 @@ const state = {
   slide: 0,
   dayKey: "",
   sheetGallery: [],
-  peek: -1
+  peek: -1,
+  albumSwiped: false
 }
 
 let dbPromise = null
@@ -479,23 +480,78 @@ function albumWords(entries) {
   return blocks || `<p class="muted">还没写下字。</p>`
 }
 
-function albumGrid(count) {
-  if (count <= 1) return { cols: 1, rows: 1 }
-  if (count <= 4) return { cols: 2, rows: Math.ceil(count / 2) }
-  if (count <= 9) return { cols: 3, rows: Math.ceil(count / 3) }
-  return { cols: 4, rows: Math.ceil(count / 4) }
+function albumIndex() {
+  const n = state.sheetGallery.length
+  if (!n) return 0
+  return Math.max(0, Math.min(state.slide, n - 1))
 }
 
-function albumPhotos(gallery) {
-  if (!gallery.length) return `<p class="muted">这一组还没有照片。</p>`
-  return gallery.map((tile, i) => {
-    const video = tile.file.mime.startsWith("video/")
-    return `<button class="sheet-pic" data-peek="${i}" type="button">
-      ${video
-        ? `<video src="${fileUrl(tile.file)}" muted playsinline preload="metadata"></video>`
-        : `<img src="${fileUrl(tile.file)}" alt="" />`}
-    </button>`
-  }).join("")
+function albumStageHtml() {
+  const gallery = state.sheetGallery
+  if (!gallery.length) return `<p class="muted sheet-empty">这一组还没有照片。</p>`
+  const index = albumIndex()
+  state.slide = index
+  const tile = gallery[index]
+  const video = tile.file.mime.startsWith("video/")
+  return `
+    <div class="sheet-stage" id="sheet-stage">
+      <button class="sheet-pic" data-peek="${index}" type="button">
+        ${video
+          ? `<video src="${fileUrl(tile.file)}" muted playsinline preload="metadata"></video>`
+          : `<img src="${fileUrl(tile.file)}" alt="" />`}
+      </button>
+      ${gallery.length > 1 ? `
+        <button class="sheet-nav prev" data-album-step="-1" type="button">‹</button>
+        <button class="sheet-nav next" data-album-step="1" type="button">›</button>
+        <p class="sheet-page">${index + 1} / ${gallery.length}</p>
+        <div class="sheet-dots">${gallery.map((_, i) => `<i class="${i === index ? "on" : ""}"></i>`).join("")}</div>
+      ` : ""}
+    </div>
+  `
+}
+
+function stepAlbum(step) {
+  const n = state.sheetGallery.length
+  if (n < 2) return
+  state.slide = (albumIndex() + step + n) % n
+  paintAlbumStage()
+}
+
+function paintAlbumStage() {
+  const host = $("sheet-photos")
+  if (!host) return
+  host.innerHTML = albumStageHtml()
+  bindAlbumSwipe()
+}
+
+function bindAlbumSwipe() {
+  const stage = $("sheet-stage")
+  if (!stage) return
+  let startX = 0
+  let moved = false
+  const start = (x) => {
+    startX = x
+    moved = false
+  }
+  const end = (x) => {
+    const dx = x - startX
+    if (Math.abs(dx) < 46) return
+    state.albumSwiped = true
+    stepAlbum(dx > 0 ? -1 : 1)
+  }
+  stage.addEventListener("touchstart", (event) => start(event.changedTouches[0].clientX), { passive: true })
+  stage.addEventListener("touchend", (event) => end(event.changedTouches[0].clientX), { passive: true })
+  stage.addEventListener("pointerdown", (event) => {
+    if (event.target.closest("[data-album-step]")) return
+    start(event.clientX)
+  })
+  stage.addEventListener("pointerup", (event) => {
+    if (event.target.closest("[data-album-step]")) return
+    end(event.clientX)
+  })
+  stage.addEventListener("pointermove", (event) => {
+    if (event.buttons && Math.abs(event.clientX - startX) > 12) moved = true
+  })
 }
 
 function closePeek() {
@@ -539,8 +595,9 @@ function openSheet({ title, date, gallery, entries, deleteId }) {
   const sheet = $("sheet")
   if (!sheet) return
   state.sheetGallery = gallery || []
+  state.slide = 0
   state.peek = -1
-  const grid = albumGrid(state.sheetGallery.length)
+  state.albumSwiped = false
   document.body.classList.add("has-sheet")
   sheet.classList.remove("hidden")
   sheet.innerHTML = `
@@ -553,7 +610,7 @@ function openSheet({ title, date, gallery, entries, deleteId }) {
         <button class="link" data-act="close-sheet" type="button">关闭</button>
       </div>
       <div class="sheet-split">
-        <aside class="sheet-photos" style="--sheet-cols:${grid.cols};--sheet-rows:${grid.rows}">${albumPhotos(state.sheetGallery)}</aside>
+        <aside class="sheet-photos" id="sheet-photos">${albumStageHtml()}</aside>
         <article class="sheet-words">
           ${albumWords(entries)}
           ${entries.map((entry) => fileDocs(entry.files)).join("")}
@@ -565,6 +622,7 @@ function openSheet({ title, date, gallery, entries, deleteId }) {
     </div>
     <div id="peek" class="peek hidden"></div>
   `
+  bindAlbumSwipe()
 }
 
 function openEntrySheet(id) {
@@ -905,9 +963,14 @@ function bindEvents() {
   $("main")?.addEventListener("click", onMainClick)
   $("sheet")?.addEventListener("click", onSheetClick)
   document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape") return
-    if (state.peek >= 0) closePeek()
-    else closeSheet()
+    if (event.key === "Escape") {
+      if (state.peek >= 0) closePeek()
+      else closeSheet()
+      return
+    }
+    if (state.peek >= 0) return
+    if (event.key === "ArrowLeft") stepAlbum(-1)
+    if (event.key === "ArrowRight") stepAlbum(1)
   })
   $("main")?.addEventListener("change", onMainChange)
   $("main")?.addEventListener("pointerover", (event) => {
@@ -941,8 +1004,17 @@ function onSheetClick(event) {
     closePeek()
     return
   }
+  const step = event.target.closest("[data-album-step]")
+  if (step) {
+    stepAlbum(Number(step.dataset.albumStep))
+    return
+  }
   const peekBtn = event.target.closest("[data-peek]")
   if (peekBtn) {
+    if (state.albumSwiped) {
+      state.albumSwiped = false
+      return
+    }
     openPeek(Number(peekBtn.dataset.peek))
     return
   }
