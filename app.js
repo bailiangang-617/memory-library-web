@@ -503,7 +503,6 @@ function albumStageHtml() {
   const tile = gallery[index]
   return `
     <div class="sheet-stage" id="sheet-stage">
-      ${albumMedia(tile.file, "sheet-blur")}
       <button class="sheet-pic" data-peek="${index}" type="button">
         ${albumMedia(tile.file)}
       </button>
@@ -524,10 +523,26 @@ function stepAlbum(step) {
   paintAlbumStage()
 }
 
+function fitAlbumMedia() {
+  const stage = $("sheet-stage")
+  const media = document.querySelector("#sheet-stage .sheet-pic img, #sheet-stage .sheet-pic video")
+  if (!stage || !media) return
+  const apply = () => {
+    const w = media.naturalWidth || media.videoWidth
+    const h = media.naturalHeight || media.videoHeight
+    if (!w || !h) return
+    stage.style.setProperty("--photo-ratio", `${w} / ${h}`)
+  }
+  if ((media.naturalWidth || media.videoWidth) > 0) apply()
+  media.addEventListener("load", apply, { once: true })
+  media.addEventListener("loadedmetadata", apply, { once: true })
+}
+
 function paintAlbumStage() {
   const host = $("sheet-photos")
   if (!host) return
   host.innerHTML = albumStageHtml()
+  fitAlbumMedia()
   bindAlbumSwipe()
 }
 
@@ -577,7 +592,6 @@ function openPeek(index) {
   const file = tile.file
   peek.classList.remove("hidden")
   peek.innerHTML = `
-    ${albumMedia(file, "peek-blur")}
     <button class="peek-close" data-act="close-peek" type="button">关闭</button>
     ${file.mime.startsWith("video/")
       ? `<video class="peek-media" src="${fileUrl(file)}" controls playsinline autoplay></video>`
@@ -630,6 +644,7 @@ function openSheet({ title, date, gallery, entries, deleteId }) {
     </div>
     <div id="peek" class="peek hidden"></div>
   `
+  fitAlbumMedia()
   bindAlbumSwipe()
 }
 
@@ -1008,7 +1023,7 @@ function unlock() {
 }
 
 function onSheetClick(event) {
-  if (event.target.closest("[data-act='close-peek']") || event.target.id === "peek" || event.target.classList.contains("peek-blur")) {
+  if (event.target.closest("[data-act='close-peek']") || event.target.id === "peek") {
     closePeek()
     return
   }
