@@ -297,6 +297,39 @@ textarea { min-height: 88px; resize: vertical; }
 .compose-types { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
 .file-btn { position: relative; overflow: hidden; }
 .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.draft-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.draft-item {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+.draft-item img,
+.draft-item video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--accent-soft);
+}
+.draft-item button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--muted);
+  line-height: 1;
+  box-shadow: 0 0 0 1px var(--line);
+}
 .preview-frame {
   width: 100%;
   min-height: 280px;

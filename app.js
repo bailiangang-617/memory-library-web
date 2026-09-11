@@ -25,7 +25,12 @@ const state = {
   dayKey: "",
   sheetGallery: [],
   peek: -1,
-  albumSwiped: false
+  albumSwiped: false,
+  draftFiles: [],
+  draftUrls: [],
+  draftTitle: "",
+  draftWhen: "",
+  draftBody: ""
 }
 
 let dbPromise = null
@@ -340,7 +345,57 @@ async function filesFromInput(list) {
   }))
 }
 
+function stashForm() {
+  if (!$("f-title")) return
+  state.draftTitle = $("f-title").value
+  state.draftWhen = $("f-when")?.value || ""
+  state.draftBody = $("f-body")?.value || ""
+}
+
+function clearDraft() {
+  (state.draftUrls || []).forEach((url) => URL.revokeObjectURL(url))
+  state.draftFiles = []
+  state.draftUrls = []
+  state.draftTitle = ""
+  state.draftWhen = ""
+  state.draftBody = ""
+}
+
+function addDraftFiles(list) {
+  Array.from(list || []).forEach((file) => {
+    const exists = state.draftFiles.some((item) => item.name === file.name && item.size === file.size && item.lastModified === file.lastModified)
+    if (exists) return
+    state.draftFiles.push(file)
+    state.draftUrls.push(URL.createObjectURL(file))
+  })
+}
+
+function removeDraft(index) {
+  const url = state.draftUrls[index]
+  if (url) URL.revokeObjectURL(url)
+  state.draftFiles.splice(index, 1)
+  state.draftUrls.splice(index, 1)
+}
+
+function draftPreviewHtml() {
+  if (!state.draftFiles.length) {
+    return `<p id="f-picked" class="muted">一次可多选，以后也能继续加。墙上只占一格。</p>`
+  }
+  return `<div id="f-picked" class="draft-row">
+    ${state.draftFiles.map((file, i) => `
+      <span class="draft-item">
+        ${file.type.startsWith("image/")
+          ? `<img src="${state.draftUrls[i]}" alt="" />`
+          : `<video src="${state.draftUrls[i]}" muted playsinline></video>`}
+        <button type="button" data-draft-remove="${i}" aria-label="去掉这张">×</button>
+      </span>
+    `).join("")}
+    <p class="muted">${state.draftFiles.length} 张，会收成一组</p>
+  </div>`
+}
+
 function render() {
+  if (state.tab === "add") stashForm()
   const titles = {
     door: ["贺紫钦", "与你的日子"],
     her: ["紫钦", "看她"],
@@ -705,14 +760,14 @@ function renderAdd() {
       ${kinds.map((item) => `<button class="btn ${type === item.type ? "primary" : "plain"}" data-compose="${item.type}" type="button">${item.label}</button>`).join("")}
     </div>
     <section class="card form">
-      <input id="f-title" class="input" placeholder="${titlePlaceholder(type)}" />
-      <input id="f-when" class="input" type="datetime-local" value="${toDatetimeLocal(Date.now())}" />
-      <textarea id="f-body" placeholder="${type === "chat" ? "把想留下的那几句贴进来。" : "想在旁边写一句吗？也可以不写。"}"></textarea>
+      <input id="f-title" class="input" placeholder="${titlePlaceholder(type)}" value="${escapeHtml(state.draftTitle || "")}" />
+      <input id="f-when" class="input" type="datetime-local" value="${escapeHtml(state.draftWhen || toDatetimeLocal(Date.now()))}" />
+      <textarea id="f-body" placeholder="${type === "chat" ? "把想留下的那几句贴进来。" : type === "photo" || type === "video" ? "写给这一组的话，点开墙会显示在右边。" : "想在旁边写一句吗？也可以不写。"}">${escapeHtml(state.draftBody || "")}</textarea>
       ${type === "chat" ? `<label class="btn ghost file-btn">从导出的对话读入<input id="f-chatfile" type="file" accept=".txt,.html,.htm,text/plain,text/html" /></label>` : ""}
-      ${type === "photo" ? `<label class="btn ghost file-btn">放入照片<input id="f-files" type="file" accept="image/*" multiple /></label>` : ""}
-      ${type === "video" ? `<label class="btn ghost file-btn">放入视频<input id="f-files" type="file" accept="video/*" multiple /></label>` : ""}
+      ${type === "photo" ? `<label class="btn ghost file-btn">${state.draftFiles.length ? "再放入几张" : "放入这一组的照片"}<input id="f-files" type="file" accept="image/*" multiple /></label>` : ""}
+      ${type === "video" ? `<label class="btn ghost file-btn">${state.draftFiles.length ? "再放入几段" : "放入这一组的视频"}<input id="f-files" type="file" accept="video/*" multiple /></label>` : ""}
       ${type === "letter" ? `<label class="btn ghost file-btn">放入信<input id="f-files" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label>` : ""}
-      <p id="f-picked" class="muted"></p>
+      ${type === "photo" || type === "video" ? draftPreviewHtml() : `<p id="f-picked" class="muted"></p>`}
       <button class="btn primary" id="f-save" type="button">放进${state.about === "her" ? "她的册子" : "我们的册子"}</button>
     </section>
   `
@@ -720,8 +775,8 @@ function renderAdd() {
 
 function titlePlaceholder(type) {
   if (type === "chat") return "可以写一个名字，比如 那天晚上"
-  if (type === "photo") return "可以写一句，比如 她侧过身的时候"
-  if (type === "video") return "这段视频，想叫它什么"
+  if (type === "photo") return "这一组，想叫它什么"
+  if (type === "video") return "这一组视频，想叫它什么"
   if (type === "letter") return "这封信"
   return "比如 在一起的某一天"
 }
@@ -1050,6 +1105,7 @@ function onSheetClick(event) {
 
 function switchTab(tab) {
   closeSheet()
+  if (tab !== "add") clearDraft()
   state.tab = tab
   state.view = null
   state.dayKey = ""
@@ -1070,9 +1126,17 @@ async function onMainClick(event) {
     render()
     return
   }
+  const drop = event.target.closest("[data-draft-remove]")
+  if (drop) {
+    removeDraft(Number(drop.dataset.draftRemove))
+    render()
+    return
+  }
   const compose = event.target.closest("[data-compose]")
   if (compose) {
-    state.compose = compose.dataset.compose
+    const next = compose.dataset.compose
+    if (next !== "photo" && next !== "video") clearDraft()
+    state.compose = next
     if (state.compose === "photo" || state.compose === "video") state.about = state.about || "her"
     render()
     return
@@ -1170,18 +1234,25 @@ async function onMainChange(event) {
     return
   }
   if (input.id === "f-files" && input.files?.length) {
-    $("f-picked").textContent = `已选 ${input.files.length} 个文件`
+    addDraftFiles(input.files)
+    input.value = ""
+    render()
   }
 }
 
 async function saveCompose() {
   const type = state.compose
-  const title = $("f-title")?.value.trim() || kindLabel(type)
-  const when = $("f-when")?.value ? new Date($("f-when").value).getTime() : Date.now()
-  const body = $("f-body")?.value.trim() || ""
-  const fileInput = $("f-files")
+  stashForm()
+  const title = (state.draftTitle || "").trim() || kindLabel(type)
+  const when = state.draftWhen ? new Date(state.draftWhen).getTime() : Date.now()
+  const body = (state.draftBody || "").trim()
   let files = []
-  if (fileInput?.files?.length) files = await filesFromInput(fileInput.files)
+  if (type === "letter") {
+    const fileInput = $("f-files")
+    if (fileInput?.files?.length) files = await filesFromInput(fileInput.files)
+  } else if (state.draftFiles.length) {
+    files = await filesFromInput(state.draftFiles)
+  }
   if (type === "chat" && !body) return alert("请贴上想留下的那几句")
   if (type === "note" && !body) return alert("请写一句想记住的话")
   if ((type === "photo" || type === "video" || type === "letter") && !files.length) {
@@ -1206,9 +1277,11 @@ async function saveCompose() {
   try {
     const saved = await persistEntry(entry)
     await loadAll()
+    clearDraft()
     state.tab = who === "her" ? "her" : "us"
-    state.view = saved.id
+    state.about = who === "her" ? "her" : "us"
     render()
+    if (saved && (type === "photo" || type === "video")) openEntrySheet(saved.id)
   } catch (error) {
     alert(error.message || "保存失败")
     if (btn) {
