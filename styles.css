@@ -894,6 +894,8 @@ body.has-sheet .track { animation-play-state: paused; }
 }
 .sheet-dots i.on { background: var(--accent); }
 .sheet-words { padding: 22px 22px 24px; }
+.sheet-edit { display: grid; gap: 12px; }
+.sheet-edit textarea { min-height: 120px; }
 .sheet-letter + .sheet-letter { margin-top: 22px; }
 .sheet-letter h3 {
   margin: 0 0 10px;

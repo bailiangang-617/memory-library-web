@@ -21,6 +21,7 @@ const state = {
   slide: 0,
   dayKey: "",
   sheetGallery: [],
+  sheetEntries: [],
   peek: -1,
   albumSwiped: false,
   draftFiles: [],
@@ -803,6 +804,80 @@ function albumWords(entries) {
   return blocks
 }
 
+function editTitleValue(entry) {
+  if (entry.title && entry.title !== kindLabel(entry.type)) return entry.title
+  return ""
+}
+
+function sheetEditHtml() {
+  const entries = state.sheetEntries || []
+  if (!entries.length) return `<p class="muted">这一页还没有可以改的字。</p>`
+  return `
+    <div class="sheet-edit">
+      <p class="muted">只改字和日子，照片还在原来的地方。</p>
+      ${entries.map((entry, i) => `
+        <section class="sheet-letter">
+          ${entries.length > 1 ? `<p class="sheet-date">第${CN_NUM[i + 1] || (i + 1)}段</p>` : ""}
+          <input class="input" data-edit-title="${entry.id}" placeholder="${titlePlaceholder(entry.type)}" value="${escapeHtml(editTitleValue(entry))}" />
+          <input class="input" type="datetime-local" data-edit-when="${entry.id}" value="${escapeHtml(toDatetimeLocal(entry.happenedAt))}" />
+          <textarea data-edit-body="${entry.id}" placeholder="${entry.type === "letter" ? "想在信旁边写一句也可以。" : "写给这一组的话，点开墙会显示在右边。"}">${escapeHtml(entry.body || "")}</textarea>
+        </section>
+      `).join("")}
+      <div class="row-btns">
+        <button class="btn plain" data-act="cancel-edit" type="button">不改了</button>
+        <button class="btn primary" data-act="save-edit" type="button">改好了</button>
+      </div>
+    </div>
+  `
+}
+
+function beginSheetEdit() {
+  const words = document.querySelector(".sheet-words")
+  if (!words) return
+  $("sheet-more")?.classList.add("hidden")
+  words.innerHTML = sheetEditHtml()
+}
+
+function cancelSheetEdit() {
+  const words = document.querySelector(".sheet-words")
+  if (!words) return
+  const entries = state.sheetEntries || []
+  words.innerHTML = `${albumWords(entries)}${entries.map((entry) => fileDocs(entry.files)).join("")}`
+}
+
+async function saveSheetEdit() {
+  const entries = state.sheetEntries || []
+  if (!entries.length) return
+  const btn = document.querySelector("[data-act='save-edit']")
+  if (btn) {
+    btn.disabled = true
+    btn.textContent = "正在改…"
+  }
+  const ids = entries.map((entry) => entry.id)
+  for (const entry of entries) {
+    const titleEl = document.querySelector(`[data-edit-title="${entry.id}"]`)
+    const whenEl = document.querySelector(`[data-edit-when="${entry.id}"]`)
+    const bodyEl = document.querySelector(`[data-edit-body="${entry.id}"]`)
+    if (!titleEl) continue
+    const title = titleEl.value.trim()
+    const when = whenEl?.value ? new Date(whenEl.value).getTime() : entry.happenedAt
+    await persistEntry({
+      ...entry,
+      title: title || kindLabel(entry.type),
+      body: (bodyEl?.value || "").trim(),
+      happenedAt: when,
+      files: entry.files || []
+    })
+  }
+  const viewId = state.view
+  await loadAll()
+  render()
+  const first = state.entries.find((item) => item.id === (viewId || ids[0]))
+  if (viewId && first) openEntrySheet(viewId)
+  else if (first && inferWho(first) !== "her") openDaySheet(dayKey(first.happenedAt))
+  else if (first) openEntrySheet(first.id)
+}
+
 function albumIndex() {
   const n = state.sheetGallery.length
   if (!n) return 0
@@ -933,12 +1008,14 @@ function closeSheet() {
   state.fileId = ""
   state.slide = 0
   state.sheetGallery = []
+  state.sheetEntries = []
 }
 
 function openSheet({ title, date, gallery, entries, deleteId }) {
   const sheet = $("sheet")
   if (!sheet) return
   state.sheetGallery = gallery || []
+  state.sheetEntries = entries || []
   state.slide = 0
   state.peek = -1
   state.albumSwiped = false
@@ -957,6 +1034,7 @@ function openSheet({ title, date, gallery, entries, deleteId }) {
         </div>
       </div>
       <div class="sheet-more hidden" id="sheet-more">
+        <button class="link" data-act="edit-words" type="button">改几个字</button>
         <button class="link" data-act="use-backdrop" type="button">用作背景</button>
         ${deleteId ? `<button class="link danger-link" data-act="delete" data-id="${deleteId}" type="button">删去这一页</button>` : ""}
       </div>
@@ -1448,6 +1526,25 @@ function onSheetClick(event) {
   }
   if (event.target.closest("[data-act='toggle-more']")) {
     $("sheet-more")?.classList.toggle("hidden")
+    return
+  }
+  if (event.target.closest("[data-act='edit-words']")) {
+    beginSheetEdit()
+    return
+  }
+  if (event.target.closest("[data-act='cancel-edit']")) {
+    cancelSheetEdit()
+    return
+  }
+  if (event.target.closest("[data-act='save-edit']")) {
+    saveSheetEdit().catch((error) => {
+      alert(error.message || "改字失败")
+      const btn = document.querySelector("[data-act='save-edit']")
+      if (btn) {
+        btn.disabled = false
+        btn.textContent = "改好了"
+      }
+    })
     return
   }
   if (event.target.id === "sheet" || event.target.closest("[data-act='close-sheet']")) {
