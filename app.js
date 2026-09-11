@@ -253,7 +253,7 @@ function bgmEntry() {
 }
 
 function defaultBgmUrl() {
-  return "./bgm-zi.mp3?v=20260911ax"
+  return "./bgm-zi.mp3?v=20260911ay"
 }
 
 function bgmUrl() {
@@ -949,7 +949,6 @@ function taleMediaHtml(scene) {
 
 function taleWordsHtml(scene) {
   return `
-    <p class="tale-date">${escapeHtml(scene.date)}</p>
     ${scene.title ? `<h2>${escapeHtml(scene.title)}</h2>` : ""}
     ${scene.body ? `<p>${escapeHtml(scene.body)}</p>` : ""}
   `
