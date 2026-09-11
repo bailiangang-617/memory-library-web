@@ -244,6 +244,47 @@ function isBackdrop(entry) {
   return entry.id === "e_site_backdrop" || String(entry.body || "").includes("<!--backdrop-->")
 }
 
+function isBgm(entry) {
+  return entry.id === "e_site_bgm" || String(entry.body || "").includes("<!--bgm-->")
+}
+
+function bgmEntry() {
+  return state.entries.find(isBgm)
+}
+
+function defaultBgmUrl() {
+  return "./bgm-zi.mp3?v=20260911au"
+}
+
+function bgmUrl() {
+  const entry = bgmEntry()
+  const file = (entry?.files || []).find((item) => {
+    const mime = String(item.mime || "")
+    const name = String(item.name || "")
+    return mime.startsWith("audio/") || /\.mp3$/i.test(name)
+  })
+  return fileUrl(file) || defaultBgmUrl()
+}
+
+function applyBgm() {
+  const audio = $("bgm")
+  const btn = $("bgm-btn")
+  if (!audio) return
+  const next = bgmUrl()
+  const custom = bgmEntry()
+  const name = custom?.files?.[0]?.name || "Love Theme"
+  if (btn) {
+    btn.title = custom ? `${name}（你放上来的）` : "Peter Eastman · Love Theme（CC BY 3.0）"
+    btn.setAttribute("aria-label", custom ? "背景音乐" : "背景音乐 Love Theme")
+  }
+  if (audio.dataset.src === next) return
+  const keepOn = sessionStorage.getItem("om_bgm") !== "off" && !audio.paused
+  audio.src = next
+  audio.dataset.src = next
+  audio.volume = 0.32
+  if (keepOn) audio.play().catch(() => {})
+}
+
 function backdropEntry() {
   return state.entries.find(isBackdrop)
 }
@@ -500,8 +541,51 @@ async function clearBackdrop() {
   applyBackdrop()
 }
 
+function isOwnMp3(file) {
+  const mime = String(file.mime || file.type || "")
+  const name = String(file.name || "")
+  return mime === "audio/mpeg" || mime === "audio/mp3" || /\.mp3$/i.test(name)
+}
+
+async function saveBgm(files) {
+  const audio = (files || []).find(isOwnMp3)
+  if (!audio) return alert("请放入你自己的 MP3")
+  const blob = audio.blob || audio
+  if (blob.size > 12 * 1024 * 1024) return alert("背景音乐请小于 12MB")
+  const prev = bgmEntry()
+  await persistEntry({
+    id: prev?.id || "e_site_bgm",
+    objectId: prev?.objectId,
+    type: "note",
+    title: "册子背景音乐",
+    body: "<!--bgm-->",
+    who: "words",
+    happenedAt: Date.now(),
+    createdAt: prev?.createdAt || Date.now(),
+    files: [{
+      id: audio.id || uid("f"),
+      name: audio.name || "bgm.mp3",
+      mime: "audio/mpeg",
+      blob
+    }]
+  })
+  await loadAll()
+  applyBgm()
+  startBgm()
+}
+
+async function clearBgm() {
+  const prev = bgmEntry()
+  if (!prev) return
+  if (Cloud.on()) await Cloud.remove(prev)
+  else await deleteEntry(prev.id)
+  await loadAll()
+  applyBgm()
+  startBgm()
+}
+
 function bookEntries() {
-  return state.entries.filter((item) => !isBackdrop(item) && !isTrial(item))
+  return state.entries.filter((item) => !isBackdrop(item) && !isBgm(item) && !isTrial(item))
 }
 
 function mediaFiles(entry) {
@@ -676,6 +760,7 @@ function draftPreviewHtml(emptyText) {
 function render() {
   if (state.tab === "add") stashForm()
   applyBackdrop()
+  applyBgm()
   const titles = {
     door: ["贺紫钦", "从第一张照片起"],
     us: ["我们", "从你递来的第一张照片起"],
@@ -1361,6 +1446,14 @@ function renderAdd() {
         ${backdropEntry() ? `<button class="btn plain" data-act="clear-backdrop" type="button">还原底色</button>` : ""}
       </div>
     </section>
+    <section class="card form">
+      <p class="muted">背景音乐只放你自己录的、或你有权使用的 MP3。网易云下载的歌有版权，不能放到这本册子里。</p>
+      ${bgmEntry() ? `<p class="muted">现在用的是：${escapeHtml(bgmEntry().files?.[0]?.name || "你的音乐")}</p>` : `<p class="muted">现在用的是开放授权的 Love Theme。</p>`}
+      <div class="row-btns">
+        <label class="btn ghost file-btn">换背景音乐<input id="f-bgm" type="file" accept="audio/mpeg,.mp3" /></label>
+        ${bgmEntry() ? `<button class="btn plain" data-act="clear-bgm" type="button">还原默认音乐</button>` : ""}
+      </div>
+    </section>
   `
 }
 
@@ -1501,7 +1594,7 @@ function renderDayLook(key) {
 }
 
 function isTrial(entry) {
-  if (isBackdrop(entry)) return false
+  if (isBackdrop(entry) || isBgm(entry)) return false
   return !!entry.demo || String(entry.title || "").startsWith("试片")
 }
 
@@ -1911,7 +2004,7 @@ async function onMainClick(event) {
     render()
     return
   }
-  if (!canWrite() && ["edit-words", "use-backdrop", "clear-backdrop", "delete", "clear-demo", "clear", "save-edit"].includes(act.dataset.act)) return
+  if (!canWrite() && ["edit-words", "use-backdrop", "clear-backdrop", "clear-bgm", "delete", "clear-demo", "clear", "save-edit"].includes(act.dataset.act)) return
   if (act.dataset.act === "back" || act.dataset.act === "close-sheet") {
     closeSheet()
     return
@@ -1933,6 +2026,15 @@ async function onMainClick(event) {
       render()
     } catch (error) {
       alert(error.message || "还原底色失败")
+    }
+    return
+  }
+  if (act.dataset.act === "clear-bgm") {
+    try {
+      await clearBgm()
+      render()
+    } catch (error) {
+      alert(error.message || "还原音乐失败")
     }
     return
   }
@@ -2002,6 +2104,20 @@ async function onMainChange(event) {
     const body = $("f-body")
     if (body) body.value = (body.value ? `${body.value}\n\n` : "") + text.slice(0, 20000)
     $("f-picked").textContent = `已读入 ${input.files[0].name}`
+    return
+  }
+  if (input.id === "f-bgm" && input.files?.[0]) {
+    if (!canWrite()) return
+    try {
+      const files = await filesFromInput(input.files)
+      input.value = ""
+      if (!isOwnMp3(files[0])) return alert("请放入 MP3 文件")
+      await saveBgm(files)
+      render()
+    } catch (error) {
+      input.value = ""
+      alert(error.message || "背景音乐上传失败")
+    }
     return
   }
   if (input.id === "f-backdrop" && input.files?.[0]) {
