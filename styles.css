@@ -178,10 +178,7 @@ body.is-view .app.is-remember main {
   padding-bottom: calc(12px + env(safe-area-inset-bottom));
 }
 .app.is-remember .book-head {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+  flex: 0 0 auto;
   padding-left: 16px;
   padding-right: 16px;
 }
@@ -626,9 +623,10 @@ body.is-view .tabbar { display: none; }
   letter-spacing: 0.04em;
 }
 .app.is-remember .book-head .cover-line {
-  margin-top: auto;
-  margin-bottom: 8px;
-  padding-top: 20px;
+  margin-top: 10px;
+  margin-bottom: 0;
+  padding-top: 0;
+  max-width: 22em;
 }
 
 .wall {
@@ -642,13 +640,14 @@ body.is-view .tabbar { display: none; }
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
 }
 .app.is-remember .wall {
-  flex: 0 0 auto;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 6px;
+  flex: 1 1 auto;
+  justify-content: space-evenly;
+  gap: clamp(8px, 1.6vh, 14px);
+  margin-top: 14px;
   margin-bottom: 0;
-  padding-top: 0;
+  padding-top: 2px;
   padding-bottom: 4px;
+  min-height: 0;
 }
 .track {
   display: flex;
