@@ -410,13 +410,17 @@ function polaroidHtml(card) {
 
 function splitRows(items, rows) {
   const out = Array.from({ length: rows }, () => [])
+  if (!items.length) return out
   items.forEach((item, i) => out[i % rows].push(item))
-  return out.filter((row) => row.length)
+  out.forEach((row, i) => {
+    if (!row.length) row.push(items[i % items.length])
+  })
+  return out
 }
 
 function wallHtml(items, htmlFn) {
   if (!items.length) return ""
-  const rows = items.length >= 6 ? 3 : items.length >= 2 ? 2 : 1
+  const rows = 5
   return `<div class="wall" data-wall>
     ${splitRows(items, rows).map((row, i) => {
       const inner = row.map(htmlFn).join("")
